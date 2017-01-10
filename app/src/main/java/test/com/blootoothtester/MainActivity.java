@@ -121,15 +121,17 @@ public class MainActivity extends AppCompatActivity {
     public Object check(){
 
         Object obj = null;
-        
+
         for(int i=0 ; i<BTArrayAdapter.getCount() ; i++){
             obj = BTArrayAdapter.getItem(i);
 
-            return obj;
+            if(obj.toString().startsWith("001_")){
+                return obj;
+            }
 
         }
 
-        return obj;
+        return null;
     }
 
     public void on(View view){
@@ -155,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
         if(requestCode == REQUEST_ENABLE_BT){
             if(myBluetoothAdapter.isEnabled()) {
 
-                myBluetoothAdapter.setName("Hello World");
+                myBluetoothAdapter.setName("001_Hello World");
                 text.setText(myBluetoothAdapter.getName());
             } else {
                 text.setText("Status: Disabled");
@@ -171,8 +173,12 @@ public class MainActivity extends AppCompatActivity {
         for(BluetoothDevice device : pairedDevices)
             BTArrayAdapter.add(device.getName()+ "\n" + device.getAddress());
 
+        Object obj = check();
+
         Toast.makeText(getApplicationContext(),"Show Paired Devices",
                 Toast.LENGTH_SHORT).show();
+
+
 
     }
 
@@ -186,6 +192,9 @@ public class MainActivity extends AppCompatActivity {
                 // add the name and the MAC address of the object to the arrayAdapter
                 BTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                 BTArrayAdapter.notifyDataSetChanged();
+
+                Object obj = check();
+
             }
         }
     };

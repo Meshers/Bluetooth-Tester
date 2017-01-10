@@ -16,10 +16,48 @@
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="Hello World" />
 
+    <TextView
+        android:id="@+id/label1"
+        android:layout_below="@+id/text"
+        android:layout_marginTop="10dp"
+        android:textSize="15dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Bluetooth ID" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_below="@+id/label1"
+        android:layout_height="wrap_content"
+        android:id="@+id/bluetooth_id"
+        android:text="@string/default_id"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/label2"
+        android:layout_below="@+id/bluetooth_id"
+        android:layout_marginTop="10dp"
+        android:textSize="15dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:text="Message" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_below="@+id/label2"
+        android:layout_height="wrap_content"
+        android:id="@+id/bluetooth_message"
+        android:text="@string/default_text"
+        android:layout_weight="1" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/bluetooth_message"
         android:orientation="horizontal"
+        android:id="@+id/layout1"
         android:layout_marginTop="30dp" >
 
         <Button
@@ -40,7 +78,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_marginTop="80dp" >
+        android:layout_below="@+id/layout1"
+        android:layout_marginTop="10dp" >
 
         <Button
             android:id="@+id/paired"

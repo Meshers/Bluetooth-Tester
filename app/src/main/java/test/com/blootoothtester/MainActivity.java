@@ -1,6 +1,5 @@
 package test.com.blootoothtester;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -10,14 +9,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import java.util.Set;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -30,14 +22,13 @@ public class MainActivity extends AppCompatActivity {
 
     private Button onBtn;
     private Button offBtn;
-    private Button listBtn;
-    private Button findBtn;
+    private Button rcvBtn;
     private TextView text;
     private EditText BTId;
     private EditText BTMessage;
 
     private MyBluetoothAdapter myBluetoothAdapter;
-    private SendMessage sendMessage;
+    private Message messageObj;
 
     private ListView myListView;
     private ArrayAdapter<String> BTArrayAdapter;
@@ -65,8 +56,7 @@ public class MainActivity extends AppCompatActivity {
         if(!myBluetoothAdapter.isSupported()) {
             onBtn.setEnabled(false);
             offBtn.setEnabled(false);
-            listBtn.setEnabled(false);
-            findBtn.setEnabled(false);
+            rcvBtn.setEnabled(false);
             text.setText("Status: not supported");
 
             Toast.makeText(getApplicationContext(),"Your device does not support Bluetooth",
@@ -79,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     // TODO Auto-generated method stub
 
-                    on(v);
+                    sendMessage(v);
                 }
             });
 
@@ -94,28 +84,17 @@ public class MainActivity extends AppCompatActivity {
             });
 
 
-            listBtn.setOnClickListener(new OnClickListener() {
+            rcvBtn.setOnClickListener(new OnClickListener() {
 
                 @Override
                 public void onClick(View v) {
                     // TODO Auto-generated method stub
-                    list(v);
+                    receiveMessage(v);
                 }
             });
 
 
-            findBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    // TODO Auto-generated method stub
-
-                    find(v);
-
-                }
-            });
-
-
+            messageObj = new Message(myBluetoothAdapter);
         }
     }
 
@@ -124,10 +103,9 @@ public class MainActivity extends AppCompatActivity {
         text = (TextView) findViewById(R.id.text);
         BTId = (EditText) findViewById(R.id.bluetooth_id);
         BTMessage = (EditText) findViewById(R.id.bluetooth_message);
-        onBtn = (Button)findViewById(R.id.turnOn);
+        onBtn = (Button)findViewById(R.id.send);
         offBtn = (Button)findViewById(R.id.turnOff);
-        listBtn = (Button)findViewById(R.id.paired);
-        findBtn = (Button)findViewById(R.id.search);
+        rcvBtn = (Button)findViewById(R.id.receive);
         myListView = (ListView)findViewById(R.id.listView1);
 
         // create the arrayAdapter that contains the BTDevices, and set it to the ListView
@@ -136,11 +114,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void on(View view){
+    public void sendMessage(View view){
 
-        sendMessage = new SendMessage(BTId.getText().toString(), BTMessage.getText().toString(), myBluetoothAdapter);
-
-        if (sendMessage.send()) {
+        if (messageObj.send(BTId.getText().toString(), BTMessage.getText().toString())) {
 
             Toast.makeText(getApplicationContext(),"Bluetooth turned on" ,
                     Toast.LENGTH_LONG).show();
@@ -150,6 +126,11 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(getApplicationContext(),"Bluetooth is already on",
                     Toast.LENGTH_LONG).show();
         }
+    }
+
+    public void receiveMessage(View view){
+
+        BTArrayAdapter = messageObj.recieve();
     }
 
     @Override
@@ -175,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
         BTArrayAdapter = myBluetoothAdapter.getBTArrayAdapter();
 
-        Toast.makeText(getApplicationContext(),"Show Paired Devices"+BTArrayAdapter.getItem(0),
+        Toast.makeText(getApplicationContext(),"Show Paired Devices",
                 Toast.LENGTH_SHORT).show();
     }
 

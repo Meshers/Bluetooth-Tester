@@ -2,12 +2,13 @@ package test.com.blootoothtester;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
+import android.widget.ArrayAdapter;
 
 
 /**
  * Created by sarahchristina on 1/10/17.
  */
-public class SendMessage {
+public class Message {
 
     private MyBluetoothAdapter myBluetoothAdapter;
 
@@ -16,12 +17,12 @@ public class SendMessage {
 
     private String BTBeaconData;
 
-    public SendMessage(String id, String message, MyBluetoothAdapter myBluetoothAdapter){
+    public Message( MyBluetoothAdapter myBluetoothAdapter){
 
         this.myBluetoothAdapter = myBluetoothAdapter;
 
-        this.id = id;
-        this.message = message;
+        this.id = null;
+        this.message = null;
 
     }
 
@@ -56,12 +57,36 @@ public class SendMessage {
 
     }
 
-    public boolean send(){
-        // turn on bluetooth and send put becon message containing the id and data
+    public boolean send(String id, String message){
 
-        BTBeaconData = createPacket();
+        this.id = id;
+        this.message = message;
+
+        //BTBeaconData = createPacket();
+        BTBeaconData = id + ":" + message;
 
         return myBluetoothAdapter.on(BTBeaconData);
 
+    }
+
+    public ArrayAdapter<String> recieve(){
+
+        myBluetoothAdapter.find();
+
+        ArrayAdapter<String> BTArrayAdapter;
+        String obj;
+
+        BTArrayAdapter = myBluetoothAdapter.getBTArrayAdapter();
+
+        for(int i = 0; i < BTArrayAdapter.getCount(); i++){
+
+            obj = BTArrayAdapter.getItem(i);
+
+            if(!obj.toString().startsWith("001")){
+                BTArrayAdapter.remove(obj);
+            }
+        }
+
+        return BTArrayAdapter;
     }
 }

@@ -5,5 +5,5 @@ package test.com.blootoothtester.util;
  */
 
 public class Constants {
-    public static final int LINK_LAYER_PAYLOAD_SIZE = 240;
+    public static final int LINK_LAYER_PDU_TEACHER_ID = 1;
 }

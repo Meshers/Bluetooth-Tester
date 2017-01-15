@@ -1,6 +1,10 @@
 package test.com.blootoothtester.network;
 
 
+import android.util.Log;
+
+import java.io.UnsupportedEncodingException;
+
 public class LinkLayerPdu {
     private byte mFromId;
     private byte mToId;
@@ -22,6 +26,34 @@ public class LinkLayerPdu {
         mData = data;
     }
 
+    /**
+     * Creates a LinkLayerPdu object from its encoded representation
+     *
+     * @param encoded an encoded LinkLayerPdu
+     */
+    public LinkLayerPdu(byte[] encoded) {
+        if (!isValidPdu(encoded)) {
+            throw new IllegalArgumentException("Invalid PDU format!");
+        }
+        mFromId = encoded[PDU_PREFIX_BYTES];
+        mToId = encoded[PDU_PREFIX_BYTES + ADDR_SIZE_BYTES];
+        mData = new byte[encoded.length - PDU_PREFIX_BYTES - ADDR_SIZE_BYTES * 2];
+        System.arraycopy(encoded, PDU_PREFIX_BYTES + ADDR_SIZE_BYTES * 2, mData, 0, mData.length);
+    }
+
+    public LinkLayerPdu(String encoded) throws UnsupportedEncodingException {
+        this(encoded.getBytes("UTF-8"));
+    }
+
+    public static boolean isValidPdu(String encoded) {
+        try {
+            return isValidPdu(encoded.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            Log.e("LLPDU", "isValid failed", e);
+            return false;
+        }
+    }
+
     public static boolean isValidPdu(byte[] encoded) {
         byte[] prefix = getPduPrefix();
         if (encoded.length < prefix.length + 2 * ADDR_SIZE_BYTES) {
@@ -33,21 +65,6 @@ public class LinkLayerPdu {
             }
         }
         return true;
-    }
-
-    /**
-     * Creates a LinkLayerPdu object from its encoded representation
-     *
-     * @param encoded an encoded LinkLayerPdu
-     */
-    public LinkLayerPdu(byte[] encoded) {
-        if (!isValidPdu(encoded)) {
-            throw new IllegalArgumentException("Invalid PDU format!");
-        }
-        mFromId = encoded[0];
-        mToId = encoded[1];
-        mData = new byte[encoded.length - 2];
-        System.arraycopy(encoded, ADDR_SIZE_BYTES * 2, mData, 0, mData.length);
     }
 
     public byte[] encode() {
@@ -66,6 +83,15 @@ public class LinkLayerPdu {
 
     public byte[] getData() {
         return mData;
+    }
+
+    public String getDataAsString() {
+        try {
+            return new String(mData, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            Log.e("LLPDU", "Failed to decode", e);
+            return null;
+        }
     }
 
     public byte getFromAddress() {

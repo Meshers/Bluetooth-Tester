@@ -7,6 +7,8 @@
     <string name="Receive">Receive Message</string>
     <string name="List">List paired Devices</string>
     <string name="Find">Search new Devices / Cancel</string>
-    <string name="default_id">001</string>
+    <string name="default_id">1</string>
     <string name="default_text">Hello World</string>
+    <string name="to_id">To ID</string>
+    <string name="message">Message</string>
 </resources>

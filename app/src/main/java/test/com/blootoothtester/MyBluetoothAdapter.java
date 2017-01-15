@@ -7,9 +7,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import java.lang.reflect.Method;
 import java.util.Set;
 
 /**
@@ -23,114 +25,128 @@ public class MyBluetoothAdapter {
 
     private Activity activity;
 
-    private Set<BluetoothDevice> pairedDevices;
     private ArrayAdapter<String> BTArrayAdapter;
     private String BTName;
 
-    public MyBluetoothAdapter(Activity activity, ArrayAdapter<String>BTArrayAdapter){
+    public MyBluetoothAdapter(Activity activity, ArrayAdapter<String> BTArrayAdapter) {
 
         this.activity = activity;
         this.myBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         this.BTArrayAdapter = BTArrayAdapter;
+
+        IntentFilter filter = new IntentFilter();
+
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        activity.registerReceiver(bReceiver, filter);
+
+
     }
 
-    public boolean isSupported(){
-
-        if(myBluetoothAdapter != null){
-            return true;
-        }
-        else{
-            return false;
-        }
+    public boolean isSupported() {
+        return myBluetoothAdapter != null;
     }
 
-    public boolean on(String BTName){
-
+    public boolean on(String BTName) {
         this.BTName = BTName;
 
         if (!myBluetoothAdapter.isEnabled()) {
-
             Intent turnOnIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             activity.startActivityForResult(turnOnIntent, REQUEST_ENABLE_BT);
 
-            Intent discoverIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            activity.startActivityForResult(discoverIntent, 0);
-
             return true;
-        }
-        else{
-
+        } else {
             return false;
         }
 
     }
 
+    public void setName(String name) {
+        BTName = name;
+        if (!myBluetoothAdapter.isEnabled()) {
+            Intent turnOnIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            activity.startActivityForResult(turnOnIntent, REQUEST_ENABLE_BT);
+        } else {
+//            if (myBluetoothAdapter.getScanMode() !=
+//                    BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+//                Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+//                discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 3000);
+//                activity.startActivity(discoverableIntent);
+//            }
+            makeDiscoverable(3000);
+            myBluetoothAdapter.setName(name);
+        }
+    }
 
-    public boolean off(){
+    public void makeDiscoverable(int timeOut) {
+        Class<?> baClass = BluetoothAdapter.class;
+        Method[] methods = baClass.getDeclaredMethods();
+        Method mSetScanMode = null;
+        for (Method method : methods) {
+            if (method.getName().equals("setScanMode")) {
+                mSetScanMode = method;
+                break;
+            }
+        }
+        try {
+            if (mSetScanMode == null) {
+                Log.e("BT", "No such method as setScanMode");
+            } else {
+                mSetScanMode.invoke(myBluetoothAdapter, timeOut);
+            }
+        } catch (Exception e) {
+            Log.e("discoverable", e.getMessage());
+            for (Class parameter : mSetScanMode.getParameterTypes()) {
+                System.out.println("PARAM:" + parameter);
+            }
+        }
+    }
 
+    public boolean off() {
         return myBluetoothAdapter.disable();
     }
 
-
     protected String activityResult(int requestCode, int resultCode, Intent data) {
         // TODO Auto-generated method stub
-        if(requestCode == REQUEST_ENABLE_BT){
-            if(myBluetoothAdapter.isEnabled()) {
-
-                myBluetoothAdapter.setName(BTName);
-
-                return myBluetoothAdapter.getName();
-
-            } else {
-                return null;
-            }
+        if (requestCode == REQUEST_ENABLE_BT && resultCode == Activity.RESULT_OK) {
+            setName(BTName);
+//            Intent discoverIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+//            activity.startActivityForResult(discoverIntent, 0);
+        } else if (resultCode == REQUEST_ENABLE_BT) {
+            Toast.makeText(activity, "Bluetooth failed to be enabled", Toast.LENGTH_LONG).show();
         }
         return null;
     }
 
-    public void paired(){
-
-        pairedDevices = myBluetoothAdapter.getBondedDevices();
-
-        // put it's one to the adapter
-        for(BluetoothDevice device : pairedDevices){
-
-            BTArrayAdapter.add(device.getName()+ "\n" + device.getAddress());
-        }
-
-    }
-
-    final BroadcastReceiver bReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver bReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
+            System.out.println("ACTION:" + intent.getAction());
             String action = intent.getAction();
             // When discovery finds a device
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                System.out.println("DEVICE:" + device.getName() + ":" + device.getAddress());
                 // add the name and the MAC address of the object to the arrayAdapter
-                BTArrayAdapter.add(device.getName()+ "\n" + device.getAddress());
+                BTArrayAdapter.add(device.getName() + "\n" + device.getAddress());
                 BTArrayAdapter.notifyDataSetChanged();
             }
         }
     };
 
-    public void find(){
+    public void find() {
 
         if (myBluetoothAdapter.isDiscovering()) {
             // the button is pressed when it discovers, so cancel the discovery
             myBluetoothAdapter.cancelDiscovery();
         }
-        else {
-            BTArrayAdapter.clear();
-            myBluetoothAdapter.startDiscovery();
-
-            activity.registerReceiver(bReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-        }
-
+        BTArrayAdapter.clear();
+        myBluetoothAdapter.startDiscovery();
     }
 
-    public ArrayAdapter<String> getBTArrayAdapter(){
+    public ArrayAdapter<String> getBTArrayAdapter() {
 
         return BTArrayAdapter;
     }

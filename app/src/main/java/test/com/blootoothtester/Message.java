@@ -4,6 +4,10 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.widget.ArrayAdapter;
 
+import java.io.UnsupportedEncodingException;
+
+import test.com.blootoothtester.network.LinkLayerPdu;
+
 
 /**
  * Created by sarahchristina on 1/10/17.
@@ -17,7 +21,7 @@ public class Message {
 
     private String BTBeaconData;
 
-    public Message( MyBluetoothAdapter myBluetoothAdapter){
+    public Message(MyBluetoothAdapter myBluetoothAdapter) {
 
         this.myBluetoothAdapter = myBluetoothAdapter;
 
@@ -26,7 +30,7 @@ public class Message {
 
     }
 
-    public String createPacket(){
+    public String createPacket() {
 
         byte[] bytes = new byte[256];
 
@@ -43,21 +47,21 @@ public class Message {
         bytes[4] = 0;
 
         //add 1 byte for length
-        bytes[5] = (byte)message.length();
+        bytes[5] = (byte) message.length();
 
         //add data to packet
         byte[] payload = message.getBytes();
 
-        for(int i = 0; i < payload.length; i++){
-            if(i+6<=bytes.length)
-                bytes[i+6] = payload[i];
+        for (int i = 0; i < payload.length; i++) {
+            if (i + 6 <= bytes.length)
+                bytes[i + 6] = payload[i];
         }
 
         return bytes.toString();
 
     }
 
-    public boolean send(String id, String message){
+    public boolean send(String id, String message) {
 
         this.id = id;
         this.message = message;
@@ -69,21 +73,27 @@ public class Message {
 
     }
 
-    public ArrayAdapter<String> recieve(){
+    public ArrayAdapter<String> recieve() {
 
         myBluetoothAdapter.find();
 
         ArrayAdapter<String> BTArrayAdapter;
-        String obj;
 
         BTArrayAdapter = myBluetoothAdapter.getBTArrayAdapter();
 
-        for(int i = 0; i < BTArrayAdapter.getCount(); i++){
+        for (int i = 0; i < BTArrayAdapter.getCount(); i++) {
 
-            obj = BTArrayAdapter.getItem(i);
+            try {
 
-            if(!obj.toString().startsWith("001")){
-                BTArrayAdapter.remove(obj);
+                byte[] name = BTArrayAdapter.getItem(i).getBytes("UTF-8");
+
+                if (LinkLayerPdu.isValidPdu(name)) {
+                    System.out.println("VALID! " + new String(name));
+                } else {
+                    System.out.println("INVALID! " + new String(name));
+                }
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
             }
         }
 

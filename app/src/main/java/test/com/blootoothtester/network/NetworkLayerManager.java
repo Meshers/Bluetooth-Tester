@@ -7,8 +7,13 @@ import java.io.UnsupportedEncodingException;
 
 public class NetworkLayerManager {
     private final static String TAG = "NetworkLayerManager";
+    private LinkLayerManager mLinkLayerManager;
 
-    public static void sendMessage(String msg) {
+    public NetworkLayerManager(LinkLayerManager linkLayerManager) {
+        mLinkLayerManager = linkLayerManager;
+    }
+
+    public void sendMessage(String msg) {
         byte[] encoded_msg;
         try {
             encoded_msg = msg.getBytes("UTF-8");
@@ -24,8 +29,8 @@ public class NetworkLayerManager {
         byte[] packet = header.writeHeaderIntoPacket(
                 new byte[NetworkLayerHeader.HEADER_SIZE_BYTES + encoded_msg.length]);
         System.arraycopy(encoded_msg, 0, packet, 3, encoded_msg.length);
-
-        LinkLayerManager.sendData(packet);
+        // TODO: Implement
+//        mLinkLayerManager.sendData(packet);
     }
 
     public void receiveMessage() {

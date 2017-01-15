@@ -75,8 +75,8 @@ public class MyBluetoothAdapter {
 //                discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 3000);
 //                activity.startActivity(discoverableIntent);
 //            }
-            makeDiscoverable(3000);
             myBluetoothAdapter.setName(name);
+            makeDiscoverable(3000);
         }
     }
 
@@ -85,17 +85,16 @@ public class MyBluetoothAdapter {
         Method[] methods = baClass.getDeclaredMethods();
         Method mSetScanMode = null;
         for (Method method : methods) {
-            if (method.getName().equals("setScanMode")) {
+            if (method.getName().equals("setScanMode") && method.getParameterTypes().length == 2
+                    && method.getParameterTypes()[0].equals(int.class)
+                    && method.getParameterTypes()[1].equals(int.class)) {
                 mSetScanMode = method;
                 break;
             }
         }
         try {
-            if (mSetScanMode == null) {
-                Log.e("BT", "No such method as setScanMode");
-            } else {
-                mSetScanMode.invoke(myBluetoothAdapter, timeOut);
-            }
+            mSetScanMode.invoke(myBluetoothAdapter,
+                    BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE, timeOut);
         } catch (Exception e) {
             Log.e("discoverable", e.getMessage());
             for (Class parameter : mSetScanMode.getParameterTypes()) {

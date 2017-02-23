@@ -1,7 +1,7 @@
 package test.com.blootoothtester.network;
 
 
-import android.bluetooth.BluetoothDevice;
+import test.com.blootoothtester.network.linklayer.LinkLayerPdu;
 
 public interface DeviceDiscoveryHandler {
     void handleDiscovery(LinkLayerPdu receivedPacket);

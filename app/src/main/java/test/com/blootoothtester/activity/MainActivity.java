@@ -1,4 +1,4 @@
-package test.com.blootoothtester;
+package test.com.blootoothtester.activity;
 
 import android.net.Uri;
 import android.os.Build;
@@ -19,10 +19,11 @@ import android.widget.Toast;
 
 import java.util.HashMap;
 
+import test.com.blootoothtester.R;
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
 import test.com.blootoothtester.network.DeviceDiscoveryHandler;
-import test.com.blootoothtester.network.LinkLayerManager;
-import test.com.blootoothtester.network.LinkLayerPdu;
+import test.com.blootoothtester.network.linklayer.LinkLayerManager;
+import test.com.blootoothtester.network.linklayer.LinkLayerPdu;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -140,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void sendMessage(String msg) {
-        mLinkLayerManager.setFromAddr(Byte.parseByte(mFromId.getText().toString()));
+        mLinkLayerManager.setOwnAddr(Byte.parseByte(mFromId.getText().toString()));
         mLinkLayerManager.sendData(msg, Byte.parseByte(mToId.getText().toString()));
     }
 

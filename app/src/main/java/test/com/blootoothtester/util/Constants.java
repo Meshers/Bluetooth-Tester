@@ -5,5 +5,7 @@ package test.com.blootoothtester.util;
  */
 
 public class Constants {
-    public static final int LINK_LAYER_PDU_TEACHER_ID = 1;
+    public static final int PDU_BROADCAST_ADDR = 255;
+    public static final int PDU_ACK_MOD = 127;
+    public static final int MAX_USERS = 40;
 }

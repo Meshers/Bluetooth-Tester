@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network;
+package test.com.blootoothtester.network.linklayer;
 
 
 import android.bluetooth.BluetoothAdapter;
@@ -9,21 +9,23 @@ import android.content.Intent;
 import android.content.IntentFilter;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
 
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
+import test.com.blootoothtester.network.DeviceDiscoveryHandler;
 import test.com.blootoothtester.util.Constants;
 
 public class LinkLayerManager {
-    private byte mFromAddr;
+    private byte mOwnAddr;
     private MyBluetoothAdapter mBluetoothAdapter;
     private DeviceDiscoveryHandler mDiscoveryHandler;
+    private LlContext mLlContext;
 
-    public LinkLayerManager(byte fromAddr, MyBluetoothAdapter bluetoothAdapter,
+    public LinkLayerManager(byte ownAddr, MyBluetoothAdapter bluetoothAdapter,
                             DeviceDiscoveryHandler discoveryHandler) {
-        mFromAddr = fromAddr;
+        mOwnAddr = ownAddr;
         mBluetoothAdapter = bluetoothAdapter;
         mDiscoveryHandler = discoveryHandler;
+        mLlContext = new LlContext((byte) 1, Constants.MAX_USERS, mOwnAddr);
 
         // register for BT discovery events
 
@@ -53,10 +55,9 @@ public class LinkLayerManager {
                 if (!LinkLayerPdu.isValidPdu(device.getName())) return;
                 try {
                     LinkLayerPdu pdu = new LinkLayerPdu(device.getName());
-                    if (pdu.getFromAddress() != Constants.LINK_LAYER_PDU_TEACHER_ID
-                            && pdu.getToAddress() != mFromAddr) {
-                        return;
-                    }
+
+                    mLlContext.receivePdu(pdu);
+
                     mDiscoveryHandler.handleDiscovery(pdu);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
@@ -73,7 +74,7 @@ public class LinkLayerManager {
     }
 
     public void sendData(byte[] packet, byte toAddr) {
-        LinkLayerPdu frame = new LinkLayerPdu(mFromAddr, toAddr, packet);
+        LinkLayerPdu frame = mLlContext.getPduToSend(toAddr, packet);
         mBluetoothAdapter.setName(new String(frame.encode()));
     }
 
@@ -85,8 +86,8 @@ public class LinkLayerManager {
         }
     }
 
-    public void setFromAddr(byte fromAddr) {
-        mFromAddr = fromAddr;
+    public void setOwnAddr(byte ownAddr) {
+        mOwnAddr = ownAddr;
     }
 
 }

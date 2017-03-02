@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network;
+package test.com.blootoothtester.network.nwlayer;
 
 
 import android.util.Log;
@@ -6,6 +6,7 @@ import android.util.Log;
 import java.io.UnsupportedEncodingException;
 
 import test.com.blootoothtester.network.linklayer.LinkLayerManager;
+import test.com.blootoothtester.network.nwlayer.NetworkLayerHeader;
 
 public class NetworkLayerManager {
     private final static String TAG = "NetworkLayerManager";

@@ -14,24 +14,21 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.HashMap;
 
 import test.com.blootoothtester.R;
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
-import test.com.blootoothtester.network.DeviceDiscoveryHandler;
+import test.com.blootoothtester.network.linklayer.DeviceDiscoveryHandler;
 import test.com.blootoothtester.network.linklayer.LinkLayerManager;
 import test.com.blootoothtester.network.linklayer.LinkLayerPdu;
+import test.com.blootoothtester.util.Logger;
 
 public class MainActivity extends AppCompatActivity {
 
     private Button mOnBtn;
-    private Button mOffBtn;
     private Button mRcvBtn;
-    private TextView mText;
-    private EditText mFromId;
     private EditText mToId;
     private EditText mBtMessage;
 
@@ -39,6 +36,10 @@ public class MainActivity extends AppCompatActivity {
     LinkLayerManager mLinkLayerManager;
 
     private ArrayAdapter<String> mBtArrayAdapter;
+
+    private Logger mLogger = new Logger();
+
+    public final static String EXTRA_OWN_ADDRESS = "OWN_ADDRESS";
 
 
     @Override
@@ -52,34 +53,20 @@ public class MainActivity extends AppCompatActivity {
 
         mBluetoothAdapter = new MyBluetoothAdapter(MainActivity.this);
 
-        DeviceDiscoveryHandler discoveryHandler = new DeviceDiscoveryHandler() {
-
-            private HashMap<Byte, String> mCurrentResponseMap = new HashMap<>();
-
-            @Override
-            public void handleDiscovery(LinkLayerPdu receivedPacket) {
-                mCurrentResponseMap.put(receivedPacket.getFromAddress(),
-                        receivedPacket.getDataAsString());
-                mBtArrayAdapter.clear();
-                for (Byte fromId : mCurrentResponseMap.keySet()) {
-                    mBtArrayAdapter.add("UserId: " + fromId
-                            + "\n" + "Message: " + mCurrentResponseMap.get(fromId));
-                }
-                mBtArrayAdapter.notifyDataSetChanged();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // this takes care of letting the user add the WRITE_SETTINGS permission
+            if (!Settings.System.canWrite(this)) {
+                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                intent.setData(Uri.parse("package:" + this.getPackageName()));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
             }
-        };
+        }
 
-        mLinkLayerManager = new LinkLayerManager(
-                Byte.parseByte(mFromId.getText().toString()),
-                mBluetoothAdapter,
-                discoveryHandler
-        );
 
         if (!mBluetoothAdapter.isSupported()) {
             mOnBtn.setEnabled(false);
-            mOffBtn.setEnabled(false);
             mRcvBtn.setEnabled(false);
-            mText.setText("Status: not supported");
 
             Toast.makeText(getApplicationContext(), "Your device does not support Bluetooth",
                     Toast.LENGTH_LONG).show();
@@ -94,43 +81,49 @@ public class MainActivity extends AppCompatActivity {
             });
 
 
-            mOffBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    off(v);
-                }
-            });
-
-
             mRcvBtn.setOnClickListener(new OnClickListener() {
 
                 @Override
                 public void onClick(View v) {
+                    Toast.makeText(MainActivity.this, "Starting to receive", Toast.LENGTH_SHORT).show();
                     mLinkLayerManager.startReceiving();
                 }
             });
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // this takes care of letting the user add the WRITE_SETTINGS permission
-            if (!Settings.System.canWrite(this)) {
-                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                intent.setData(Uri.parse("package:" + this.getPackageName()));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+
+        DeviceDiscoveryHandler discoveryHandler = new DeviceDiscoveryHandler() {
+
+            private HashMap<Byte, String> mCurrentResponseMap = new HashMap<>();
+
+            @Override
+            public void handleDiscovery(LinkLayerPdu receivedPacket) {
+                mLogger.d("MainActivity", "Packet for " + receivedPacket.getToAddress()
+                        + " received from " + receivedPacket.getFromAddress() + " with content"
+                        + receivedPacket.getDataAsString());
+                mCurrentResponseMap.put(receivedPacket.getFromAddress(),
+                        receivedPacket.getDataAsString());
+                mBtArrayAdapter.clear();
+                for (Byte fromId : mCurrentResponseMap.keySet()) {
+                    mBtArrayAdapter.add("UserId: " + fromId
+                            + "\n" + "Message: " + mCurrentResponseMap.get(fromId));
+                }
+                mBtArrayAdapter.notifyDataSetChanged();
             }
-        }
+        };
+
+        mLinkLayerManager = new LinkLayerManager(
+                getIntent().getByteExtra(EXTRA_OWN_ADDRESS, (byte) -1),
+                mBluetoothAdapter,
+                discoveryHandler
+        );
     }
 
     public void initialize() {
 
-        mText = (TextView) findViewById(R.id.text);
-        mFromId = (EditText) findViewById(R.id.et_from_id);
         mToId = (EditText) findViewById(R.id.et_to_id);
         mBtMessage = (EditText) findViewById(R.id.bluetooth_message);
         mOnBtn = (Button) findViewById(R.id.send);
-        mOffBtn = (Button) findViewById(R.id.turn_off);
         mRcvBtn = (Button) findViewById(R.id.receive);
         ListView myListView = (ListView) findViewById(R.id.listView1);
 
@@ -139,35 +132,8 @@ public class MainActivity extends AppCompatActivity {
         myListView.setAdapter(mBtArrayAdapter);
     }
 
-
     public void sendMessage(String msg) {
-        mLinkLayerManager.setOwnAddr(Byte.parseByte(mFromId.getText().toString()));
         mLinkLayerManager.sendData(msg, Byte.parseByte(mToId.getText().toString()));
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
-        String BTName = mBluetoothAdapter.activityResult(requestCode, resultCode);
-
-        if (BTName != null) {
-
-            mText.setText(BTName);
-
-        } else {
-            mText.setText("Status: Disabled");
-        }
-
-    }
-
-    public void off(View view) {
-
-        if (mBluetoothAdapter.off()) {
-            mText.setText("Status: Disconnected");
-
-            Toast.makeText(getApplicationContext(), "Bluetooth turned off",
-                    Toast.LENGTH_LONG).show();
-        }
-
+        Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
     }
 }

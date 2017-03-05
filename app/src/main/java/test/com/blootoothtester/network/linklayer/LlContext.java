@@ -15,7 +15,7 @@ public class LlContext {
 
     public interface Callback {
         void transmitPdu(LinkLayerPdu pdu);
-        void sendPduHigher(LinkLayerPdu pdu);
+        void sendUpperLayer(LinkLayerPdu pdu);
     }
 
     private final byte mSessionId;
@@ -24,6 +24,9 @@ public class LlContext {
     private final Callback mCallback;
     @SuppressLint("UseSparseArrays")
     private final HashMap<Byte, LlUser> mUserMap = new HashMap<>();
+
+    private LinkLayerPdu mCurrentPdu;
+    private final AckInterpreter mAckInterpreter = new AckInterpreter();
 
     public LlContext(byte sessionId, int maxUsers, byte ownAddr, Callback callback) {
         mSessionId = sessionId;
@@ -41,25 +44,33 @@ public class LlContext {
      * @param pdu the pdu discovered
      */
     public void receivePdu(LinkLayerPdu pdu) {
-        boolean isNewAcceptedPdu = addPdu(pdu);
+        switch (pdu.getType()) {
+            case MESSAGE:
+            case REPEAT:
+                boolean isNewAcceptedPdu = addPdu(pdu);
 
-        if (isNewAcceptedPdu) {
-            sendUpdatedAckArray();
-        }
+                if (isNewAcceptedPdu) {
+                    sendUpdatedAckArray();
+                }
 
-        if (isNewAcceptedPdu && (pdu.getToAddress() == Constants.PDU_BROADCAST_ADDR ||
-                pdu.getToAddress() == mOwnAddr)) {
-            // send message to upper layer
-            mCallback.sendPduHigher(pdu);
+                if (isNewAcceptedPdu && (pdu.getToAddress() == Constants.PDU_BROADCAST_ADDR ||
+                        pdu.getToAddress() == mOwnAddr)) {
+                    // send message to upper layer
+                    mCallback.sendUpperLayer(pdu);
+                }
+                break;
         }
     }
 
     private void sendUpdatedAckArray() {
-        // TODO: complete
+        mCurrentPdu = LinkLayerPdu.getAckChangedPdu(mCurrentPdu, mAckArray);
+        mCallback.transmitPdu(mCurrentPdu);
     }
 
     /**
-     * adds a received PDU to the LLContext if it is not out of order and not a repeat, else ignores
+     * adds a received PDU to the LLContext if the message is not out of order and not a repeat,
+     * else ignores the message
+     * Also compares the AckArray with
      * @param pdu the pdu to process
      * @return true if this is a new PDU which has been accepted into the context (not necessarily
      * destined for this device though), false otherwise
@@ -81,7 +92,6 @@ public class LlContext {
                 pdu.getData()));
         // TODO: This is tightly coupled with the way we allocate addresses (starting from 1)
         setInAckArray(sendingUser.getAddr(), sequenceId);
-
         return true;
     }
 
@@ -124,6 +134,7 @@ public class LlContext {
                 toAddr,
                 data);
 
+        mCurrentPdu = pdu;
         mCallback.transmitPdu(pdu);
     }
 }

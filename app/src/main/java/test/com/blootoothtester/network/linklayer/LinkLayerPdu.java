@@ -12,7 +12,7 @@ import test.com.blootoothtester.util.Constants;
 public class LinkLayerPdu {
 
     // priority wise - MESSAGE > REPEAT
-    private enum Type {
+    enum Type {
         MESSAGE,
         REPEAT
     }
@@ -75,6 +75,12 @@ public class LinkLayerPdu {
             throw new IllegalArgumentException("Payload size greater than max (received "
                     + data.length + " max " + PAYLOAD_MAX_BYTES + " bytes)");
         }
+    }
+
+    public static LinkLayerPdu getAckChangedPdu(LinkLayerPdu oldPdu, byte[] newAckArray) {
+        return new LinkLayerPdu(oldPdu.getSessionId(), newAckArray, oldPdu.getSequenceId(),
+                oldPdu.getFromAddress(), oldPdu.getToAddress(), oldPdu.getData(),
+                oldPdu.getType());
     }
 
     public static LinkLayerPdu getMessagePdu(byte sessionId, byte[] ackArray, byte sequenceId,
@@ -216,11 +222,20 @@ public class LinkLayerPdu {
         return mSequenceId;
     }
 
+    // TODO: use to differentiate sessions
+    public byte getSessionId() {
+        return mSequenceId;
+    }
+
     public byte getFromAddress() {
         return mFromId;
     }
 
     public byte getToAddress() {
         return mToId;
+    }
+
+    public Type getType() {
+        return mType;
     }
 }

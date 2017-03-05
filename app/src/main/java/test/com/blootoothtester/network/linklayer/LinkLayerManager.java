@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
 import test.com.blootoothtester.util.Constants;
@@ -33,12 +34,13 @@ public class LinkLayerManager {
             }
 
             @Override
-            public void sendPduHigher(LinkLayerPdu pdu) {
+            public void sendUpperLayer(LinkLayerPdu pdu) {
                 mDiscoveryHandler.handleDiscovery(pdu);
             }
         };
 
         mLlContext = new LlContext((byte) 1, Constants.MAX_USERS, ownAddr, callback);
+        mLlContext.sendPdu(Constants.PDU_BROADCAST_ADDR, "init".getBytes(Charset.forName("UTF-8")));
 
         // register for BT discovery events
         IntentFilter filter = new IntentFilter();

@@ -28,7 +28,6 @@ import test.com.blootoothtester.util.Logger;
 public class MainActivity extends AppCompatActivity {
 
     private Button mOnBtn;
-    private Button mRcvBtn;
     private EditText mToId;
     private EditText mBtMessage;
 
@@ -66,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (!mBluetoothAdapter.isSupported()) {
             mOnBtn.setEnabled(false);
-            mRcvBtn.setEnabled(false);
 
             Toast.makeText(getApplicationContext(), "Your device does not support Bluetooth",
                     Toast.LENGTH_LONG).show();
@@ -77,16 +75,6 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     sendMessage(mBtMessage.getText().toString());
-                }
-            });
-
-
-            mRcvBtn.setOnClickListener(new OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    Toast.makeText(MainActivity.this, "Starting to receive", Toast.LENGTH_SHORT).show();
-                    mLinkLayerManager.startReceiving();
                 }
             });
         }
@@ -117,6 +105,13 @@ public class MainActivity extends AppCompatActivity {
                 mBluetoothAdapter,
                 discoveryHandler
         );
+
+        startReceiving();
+    }
+
+    public void startReceiving() {
+        Toast.makeText(MainActivity.this, "Starting to receive", Toast.LENGTH_SHORT).show();
+        mLinkLayerManager.startReceiving();
     }
 
     public void initialize() {
@@ -124,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
         mToId = (EditText) findViewById(R.id.et_to_id);
         mBtMessage = (EditText) findViewById(R.id.bluetooth_message);
         mOnBtn = (Button) findViewById(R.id.send);
-        mRcvBtn = (Button) findViewById(R.id.receive);
         ListView myListView = (ListView) findViewById(R.id.listView1);
 
         // create the arrayAdapter that contains the BTDevices, and set it to the ListView

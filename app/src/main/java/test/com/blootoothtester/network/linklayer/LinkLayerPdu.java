@@ -21,11 +21,15 @@ public class LinkLayerPdu {
     private final byte[] mAckArray;
     private final Type mType;
 
-    // applicable to Type Message
+    // applicable to Type Message and Repeat
     private byte mSequenceId;
     private byte mFromId;
     private byte mToId;
     private byte[] mData;
+
+    // applicable to type Repeat
+    private byte mRepeaterId; // to know who's repeating besides who is being repeated
+
 
 
     // TODO: Allow NACK to be requested from specific phones e.g. phones whose responses you
@@ -45,17 +49,24 @@ public class LinkLayerPdu {
     private final static int PDU_SEQ_ID_BYTES = 1;
     private final static int PDU_ACK_ARRAY_BYTES = Constants.MAX_USERS; // 1 ACK byte per user
 
-    private final static int PDU_HEADER_BYTES = PDU_PREFIX_BYTES
+    private final static int PDU_MSG_HEADER_BYTES = PDU_PREFIX_BYTES
             + PDU_SESSION_ID_BYTES
             + PDU_TYPE_BYTES
             + PDU_ACK_ARRAY_BYTES
             + PDU_SEQ_ID_BYTES
             + ADDR_SIZE_BYTES * 2;
 
-    private final static int PAYLOAD_MAX_BYTES = TOT_SIZE - PDU_HEADER_BYTES;
+    private final static int PDU_REPEAT_HEADER_BYTES = PDU_PREFIX_BYTES
+            + PDU_SESSION_ID_BYTES
+            + PDU_TYPE_BYTES
+            + PDU_ACK_ARRAY_BYTES
+            + PDU_SEQ_ID_BYTES
+            + ADDR_SIZE_BYTES * 3;
+
+    private final static int PAYLOAD_MAX_BYTES = TOT_SIZE - PDU_REPEAT_HEADER_BYTES;
 
     private LinkLayerPdu(byte sessionId, byte[] ackArray, byte sequenceId, byte fromId, byte toId,
-                         byte[] data, Type type) {
+                         byte[] data, Type type, byte repeaterId) {
 
         mType = type;
 
@@ -75,30 +86,41 @@ public class LinkLayerPdu {
             throw new IllegalArgumentException("Payload size greater than max (received "
                     + data.length + " max " + PAYLOAD_MAX_BYTES + " bytes)");
         }
+
+        mRepeaterId = repeaterId;
     }
 
     public static LinkLayerPdu getAckChangedPdu(LinkLayerPdu oldPdu, byte[] newAckArray) {
         return new LinkLayerPdu(oldPdu.getSessionId(), newAckArray, oldPdu.getSequenceId(),
                 oldPdu.getFromAddress(), oldPdu.getToAddress(), oldPdu.getData(),
-                oldPdu.getType());
+                oldPdu.getType(), oldPdu.getRepeaterAddress());
     }
 
     public static LinkLayerPdu getMessagePdu(byte sessionId, byte[] ackArray, byte sequenceId,
                                              byte fromId, byte toId,
                                              byte[] data) {
         return new LinkLayerPdu(sessionId, ackArray, sequenceId, fromId, toId, data,
-                Type.MESSAGE);
+                Type.MESSAGE, (byte) 0);
     }
 
-    public static LinkLayerPdu getRepeatPdu(byte sessionId, byte[] ackArray, LinkLayerPdu repeatPdu) {
+    /**
+     * @param ackArray the AckArray of the repeater (own ack array)
+     * @param repeaterId the ID of the device repeating the message (own ID)
+     * @param repeatPdu the PDU being re-broadcasted. Kept it this way in case we remove LlMessage
+     *                  in the future
+     * @return a REPEAT type LL PDU
+     */
+    public static LinkLayerPdu getRepeatPdu(byte[] ackArray, byte repeaterId,
+                                            LinkLayerPdu repeatPdu) {
         return new LinkLayerPdu(
-                sessionId,
+                repeatPdu.getSessionId(),
                 ackArray,
                 repeatPdu.getSequenceId(),
                 repeatPdu.getFromAddress(),
                 repeatPdu.getToAddress(),
                 repeatPdu.getData(),
-                Type.REPEAT
+                Type.REPEAT,
+                repeaterId
         );
     }
 
@@ -143,7 +165,16 @@ public class LinkLayerPdu {
 
     private byte[] encode() {
         byte[] prefix = getPduPrefix();
-        byte[] encoded = new byte[PDU_HEADER_BYTES + mData.length];
+        int headerSize = 0;
+        switch (getType()) {
+            case MESSAGE:
+                headerSize = PDU_MSG_HEADER_BYTES;
+                break;
+            case REPEAT:
+                headerSize = PDU_REPEAT_HEADER_BYTES;
+                break;
+        }
+        byte[] encoded = new byte[headerSize + mData.length];
         // add prefix
         System.arraycopy(prefix, 0, encoded, 0, prefix.length);
         int nextFieldIndex = prefix.length;
@@ -153,9 +184,15 @@ public class LinkLayerPdu {
         // add Type
         encoded[nextFieldIndex] = getTypeEncoded(mType);
         nextFieldIndex += PDU_TYPE_BYTES;
+        // if REPEAT add repeaterId
+        if (getType() == Type.REPEAT) {
+            encoded[nextFieldIndex] = getRepeaterAddress();
+            nextFieldIndex += ADDR_SIZE_BYTES;
+        }
         // add ACK array
         System.arraycopy(mAckArray, 0, encoded, nextFieldIndex, mAckArray.length);
         nextFieldIndex += PDU_ACK_ARRAY_BYTES;
+        encoded[nextFieldIndex] =
         // add Sequence ID for message
         encoded[nextFieldIndex] = mSequenceId;
         nextFieldIndex += PDU_SEQ_ID_BYTES;
@@ -179,6 +216,12 @@ public class LinkLayerPdu {
         // get type
         Type type = getTypeDecoded(encoded[nextFieldIndex]);
         nextFieldIndex += PDU_TYPE_BYTES;
+        // if REPEAT, get repeaterId
+        byte repeaterId = 0;
+        if (type == Type.REPEAT) {
+            repeaterId = encoded[nextFieldIndex];
+            nextFieldIndex += ADDR_SIZE_BYTES;
+        }
         // get ACK array
         byte[] ackArray = new byte[Constants.MAX_USERS];
         System.arraycopy(encoded, nextFieldIndex, ackArray, 0, ackArray.length);
@@ -196,7 +239,8 @@ public class LinkLayerPdu {
         byte[] data = new byte[encoded.length - nextFieldIndex];
         System.arraycopy(encoded, nextFieldIndex, data, 0, data.length);
 
-        return new LinkLayerPdu(sessionId, ackArray, sequenceId, fromId, toId, data, type);
+        return new LinkLayerPdu(sessionId, ackArray, sequenceId, fromId, toId, data, type,
+                repeaterId);
     }
 
     public static LinkLayerPdu from(String encoded) {
@@ -237,5 +281,13 @@ public class LinkLayerPdu {
 
     public Type getType() {
         return mType;
+    }
+
+    public byte getRepeaterAddress() {
+        return mRepeaterId;
+    }
+
+    public byte[] getAckArray() {
+        return mAckArray;
     }
 }

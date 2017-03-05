@@ -5,13 +5,13 @@ public class LlMessage {
     private final byte mFromAddress;
     private final byte mToAddress;
     private final int mSequenceId;
-    private final byte[] mContents;
+    private final byte[] mData;
 
-    public LlMessage(byte fromAddress, byte toAddress, int sequenceId, byte[] contents) {
+    public LlMessage(byte fromAddress, byte toAddress, int sequenceId, byte[] data) {
         mFromAddress = fromAddress;
         mToAddress = toAddress;
         mSequenceId = sequenceId;
-        mContents = contents;
+        mData = data;
     }
 
     public byte getFromAddress() {
@@ -26,7 +26,7 @@ public class LlMessage {
         return mSequenceId;
     }
 
-    public byte[] getContents() {
-        return mContents;
+    public byte[] getData() {
+        return mData;
     }
 }

@@ -1,12 +1,14 @@
 package test.com.blootoothtester.network.linklayer;
 
+import android.support.annotation.Nullable;
+
 import java.util.HashMap;
 import java.util.HashSet;
 
 import test.com.blootoothtester.util.Constants;
 
-public class AckInterpreter {
-    private static class MissingMessage {
+class AckInterpreter {
+    static class MissingMessage {
         private final byte mFromId;
         private final byte mSequenceId;
 
@@ -32,6 +34,24 @@ public class AckInterpreter {
         public int hashCode() {
             return mFromId * 1000 + mSequenceId;
         }
+
+        public byte getFromId() {
+            return mFromId;
+        }
+
+        public byte getSequenceId() {
+            return mSequenceId;
+        }
+    }
+
+    private Notifier mNotifier;
+
+    public AckInterpreter(@Nullable Notifier notifier) {
+        mNotifier = notifier;
+    }
+
+    interface Notifier {
+        void onMissingCleared(byte missingAddr, byte missingSeqId);
     }
 
     // maps a missing message to the addrs of people missing it
@@ -39,7 +59,7 @@ public class AckInterpreter {
     // maps a misser to the MissingMessages he has missed
     private HashMap<Byte, HashSet<MissingMessage>> mMisserMap = new HashMap<>();
 
-    public void handle(byte[] ownAckArray, byte[] receivedAckArray, byte ackArrayOwnerAddr) {
+    public void handle(byte[] ownAckArray, byte[] receivedAckArray, byte otherArrayOwner) {
         if (ownAckArray.length != receivedAckArray.length
                 || ownAckArray.length != Constants.MAX_USERS) {
             throw new IllegalArgumentException("arrays have different lengths: "
@@ -49,18 +69,35 @@ public class AckInterpreter {
         }
         // TODO: Once it exceeds 127 fixme
         for (byte i = 0; i < ownAckArray.length; i++) {
-            removeIfMissingResolved(ackArrayOwnerAddr,
+            removeIfMissingResolved(otherArrayOwner,
                     AckArrayUtils.getAddressFromIndex(i),
                     receivedAckArray[i]);
             if (ownAckArray[i] > receivedAckArray[i]) {
-                addMissing(ackArrayOwnerAddr, AckArrayUtils.getAddressFromIndex(i),
+                addMissing(otherArrayOwner, AckArrayUtils.getAddressFromIndex(i),
                         (byte) (receivedAckArray[i] + 1));
             }
         }
     }
 
+    public HashMap<MissingMessage, Integer> getMissingCounter() {
+        HashMap<MissingMessage, Integer> counter = new HashMap<>();
+        for (MissingMessage message : mMissingMap.keySet()) {
+            counter.put(message, mMissingMap.get(message).size());
+        }
+
+        return counter;
+    }
+
+    public void reset() {
+        mMissingMap = new HashMap<>();
+        mMisserMap = new HashMap<>();
+    }
+
     private void removeIfMissingResolved(byte misserAddr, byte missingAddr,
                                          byte currSequenceId) {
+        if (!mMisserMap.containsKey(misserAddr)) {
+            return;
+        }
         for (MissingMessage missingMessage : mMisserMap.get(misserAddr)) {
             if (missingMessage.mFromId == missingAddr
                     && missingMessage.mSequenceId <= currSequenceId) {
@@ -107,6 +144,10 @@ public class AckInterpreter {
         // also, convenient when extracting missing messages
         if (misserAddrs.size() == 0) {
             mMissingMap.remove(missingMessage);
+            if (mNotifier != null) {
+                mNotifier.onMissingCleared(missingMessage.getFromId(),
+                        missingMessage.getSequenceId());
+            }
         }
 
         // 2.

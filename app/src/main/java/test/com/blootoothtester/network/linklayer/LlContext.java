@@ -116,7 +116,7 @@ public class LlContext {
                 new LlMessage(mOwnAddr, toAddr, newSequenceId, data)
         );
 
-        LinkLayerPdu pdu = new LinkLayerPdu(
+        LinkLayerPdu pdu = LinkLayerPdu.getMessagePdu(
                 mSessionId,
                 mAckArray,
                 newSequenceId,

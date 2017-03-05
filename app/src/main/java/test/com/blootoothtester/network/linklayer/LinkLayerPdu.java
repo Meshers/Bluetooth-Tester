@@ -11,17 +11,29 @@ import test.com.blootoothtester.util.Constants;
 @SuppressWarnings("WeakerAccess") // TODO: Remove once finalised
 public class LinkLayerPdu {
 
-    public static final int TYPE_MESSAGE = 1;
-    public static final int TYPE_REQUEST_REPEAT = 2;
+    // priority wise - MESSAGE > REPEAT
+    private enum Type {
+        MESSAGE,
+        REPEAT
+    }
 
+    private final byte mSessionId;
+    private final byte[] mAckArray;
+    private final Type mType;
 
+    // applicable to Type Message
+    private byte mSequenceId;
     private byte mFromId;
     private byte mToId;
-    private byte mSessionId;
-
-    private byte mSequenceId;
-    private byte[] mAckArray;
     private byte[] mData;
+
+
+    // TODO: Allow NACK to be requested from specific phones e.g. phones whose responses you
+    // receive a lot, who are also currently not transmitting a message of their own or a response
+    // to a NACK
+    // JUSTIFICATION: Experimentally discovered that most devices which transmit well also receive
+    // well as the root cause is good BT hardware.
+    // Also, since BT scanning is active, you seeing it <=> it can see you
 
     private final static Charset CHARSET = Charset.forName("UTF-8");
 
@@ -29,6 +41,7 @@ public class LinkLayerPdu {
     private final static int ADDR_SIZE_BYTES = 1;
     private final static int PDU_PREFIX_BYTES = getPduPrefix().length;
     private final static int PDU_SESSION_ID_BYTES = 1;
+    private final static int PDU_TYPE_BYTES = 1;
     private final static int PDU_SEQ_ID_BYTES = 1;
     private final static int PDU_ACK_ARRAY_BYTES = Constants.MAX_USERS; // 1 ACK byte per user
 
@@ -40,8 +53,11 @@ public class LinkLayerPdu {
 
     private final static int PAYLOAD_MAX_BYTES = TOT_SIZE - PDU_HEADER_BYTES;
 
-    public LinkLayerPdu(byte sessionId, byte[] ackArray, byte sequenceId, byte fromId, byte toId,
-                        byte[] data) {
+    private LinkLayerPdu(byte sessionId, byte[] ackArray, byte sequenceId, byte fromId, byte toId,
+                         byte[] data, Type type) {
+
+        mType = type;
+
         mFromId = fromId;
         mToId = toId;
         mAckArray = ackArray;
@@ -52,12 +68,31 @@ public class LinkLayerPdu {
         mSessionId = sessionId;
         mSequenceId = sequenceId;
 
-        if (data.length > PAYLOAD_MAX_BYTES) {
+        mData = data;
+
+        if (mData.length > PAYLOAD_MAX_BYTES) {
             throw new IllegalArgumentException("Payload size greater than max (received "
                     + data.length + " max " + PAYLOAD_MAX_BYTES + " bytes)");
         }
+    }
 
-        mData = data;
+    public static LinkLayerPdu getMessagePdu(byte sessionId, byte[] ackArray, byte sequenceId,
+                                             byte fromId, byte toId,
+                                             byte[] data) {
+        return new LinkLayerPdu(sessionId, ackArray, sequenceId, fromId, toId, data,
+                Type.MESSAGE);
+    }
+
+    public static LinkLayerPdu getRepeatPdu(byte sessionId, byte[] ackArray, LinkLayerPdu repeatPdu) {
+        return new LinkLayerPdu(
+                sessionId,
+                ackArray,
+                repeatPdu.getSequenceId(),
+                repeatPdu.getFromAddress(),
+                repeatPdu.getToAddress(),
+                repeatPdu.getData(),
+                Type.REPEAT
+        );
     }
 
     public static boolean isValidPdu(String encoded) {
@@ -77,6 +112,19 @@ public class LinkLayerPdu {
         return true;
     }
 
+    public String getAsString() {
+        return new String(encode(), CHARSET);
+    }
+
+
+    private static byte getTypeEncoded(Type type) {
+        return (byte) (type.ordinal() + 1);
+    }
+
+    private static Type getTypeDecoded(byte type) {
+        return Type.values()[type];
+    }
+
     private byte[] encode() {
         byte[] prefix = getPduPrefix();
         byte[] encoded = new byte[PDU_HEADER_BYTES + mData.length];
@@ -86,6 +134,9 @@ public class LinkLayerPdu {
         // add session ID
         encoded[nextFieldIndex] = mSessionId;
         nextFieldIndex += PDU_SESSION_ID_BYTES;
+        // add Type
+        encoded[nextFieldIndex] = getTypeEncoded(mType);
+        nextFieldIndex += PDU_TYPE_BYTES;
         // add ACK array
         System.arraycopy(mAckArray, 0, encoded, nextFieldIndex, mAckArray.length);
         nextFieldIndex += PDU_ACK_ARRAY_BYTES;
@@ -103,16 +154,15 @@ public class LinkLayerPdu {
         return encoded;
     }
 
-    public String getAsString() {
-        return new String(encode(), CHARSET);
-    }
-
     private static LinkLayerPdu decode(byte[] encoded) {
         byte[] prefix = getPduPrefix();
         int nextFieldIndex = prefix.length;
         // get session ID
         byte sessionId = encoded[nextFieldIndex];
         nextFieldIndex += PDU_SESSION_ID_BYTES;
+        // get type
+        Type type = getTypeDecoded(encoded[nextFieldIndex]);
+        nextFieldIndex += PDU_TYPE_BYTES;
         // get ACK array
         byte[] ackArray = new byte[Constants.MAX_USERS];
         System.arraycopy(encoded, nextFieldIndex, ackArray, 0, ackArray.length);
@@ -130,7 +180,7 @@ public class LinkLayerPdu {
         byte[] data = new byte[encoded.length - nextFieldIndex];
         System.arraycopy(encoded, nextFieldIndex, data, 0, data.length);
 
-        return new LinkLayerPdu(sessionId, ackArray, sequenceId, fromId, toId, data);
+        return new LinkLayerPdu(sessionId, ackArray, sequenceId, fromId, toId, data, type);
     }
 
     public static LinkLayerPdu from(String encoded) {
@@ -147,7 +197,6 @@ public class LinkLayerPdu {
 
     /**
      * temporary while only link layer is present
-     *
      */
     public String getDataAsString() {
         return new String(mData, CHARSET);

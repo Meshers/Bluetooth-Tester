@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network;
+package test.com.blootoothtester.network.linklayer;
 
 
 import android.bluetooth.BluetoothAdapter;
@@ -9,24 +9,40 @@ import android.content.Intent;
 import android.content.IntentFilter;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
+import java.nio.charset.Charset;
 
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
 import test.com.blootoothtester.util.Constants;
+import test.com.blootoothtester.util.Logger;
 
 public class LinkLayerManager {
-    private byte mFromAddr;
     private MyBluetoothAdapter mBluetoothAdapter;
     private DeviceDiscoveryHandler mDiscoveryHandler;
+    private LlContext mLlContext;
+    private Logger mLogger = new Logger();
 
-    public LinkLayerManager(byte fromAddr, MyBluetoothAdapter bluetoothAdapter,
+    public LinkLayerManager(byte ownAddr, MyBluetoothAdapter bluetoothAdapter,
                             DeviceDiscoveryHandler discoveryHandler) {
-        mFromAddr = fromAddr;
         mBluetoothAdapter = bluetoothAdapter;
         mDiscoveryHandler = discoveryHandler;
 
-        // register for BT discovery events
+        LlContext.Callback callback = new LlContext.Callback() {
+            @Override
+            public void transmitPdu(LinkLayerPdu pdu) {
+                mLogger.d("LinkLayerManager", "sendData: seq.id: " + pdu.getSequenceId());
+                mBluetoothAdapter.setName(pdu.getAsString());
+            }
 
+            @Override
+            public void sendUpperLayer(LlMessage message) {
+                mDiscoveryHandler.handleDiscovery(message);
+            }
+        };
+
+        mLlContext = new LlContext((byte) 1, Constants.MAX_USERS, ownAddr, callback);
+        mLlContext.sendPdu(Constants.PDU_BROADCAST_ADDR, "init".getBytes(Charset.forName("UTF-8")));
+
+        // register for BT discovery events
         IntentFilter filter = new IntentFilter();
 
         filter.addAction(BluetoothDevice.ACTION_FOUND);
@@ -44,23 +60,18 @@ public class LinkLayerManager {
                     startReceiving();
                 }
 
-                // When discovery finds a device
+                // If not device discovery intent, ignore it
                 if (!BluetoothDevice.ACTION_FOUND.equals(action)) return;
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 System.out.println("DEVICE:" + device.getName() + ":" + device.getAddress());
-                // add the name and the MAC address of the object to the arrayAdapter
+
+                // if it isn't part of our clique, kick it out
                 if (!LinkLayerPdu.isValidPdu(device.getName())) return;
-                try {
-                    LinkLayerPdu pdu = new LinkLayerPdu(device.getName());
-                    if (pdu.getFromAddress() != Constants.LINK_LAYER_PDU_TEACHER_ID
-                            && pdu.getToAddress() != mFromAddr) {
-                        return;
-                    }
-                    mDiscoveryHandler.handleDiscovery(pdu);
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
+
+                LinkLayerPdu pdu = LinkLayerPdu.from(device.getName());
+
+                mLlContext.receivePdu(pdu);
             }
         };
 
@@ -73,8 +84,7 @@ public class LinkLayerManager {
     }
 
     public void sendData(byte[] packet, byte toAddr) {
-        LinkLayerPdu frame = new LinkLayerPdu(mFromAddr, toAddr, packet);
-        mBluetoothAdapter.setName(new String(frame.encode()));
+        mLlContext.sendPdu(toAddr, packet);
     }
 
     public void sendData(String msg, byte toAddr) {
@@ -83,10 +93,6 @@ public class LinkLayerManager {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-    }
-
-    public void setFromAddr(byte fromAddr) {
-        mFromAddr = fromAddr;
     }
 
 }

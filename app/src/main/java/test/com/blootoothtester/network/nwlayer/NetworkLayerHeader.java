@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network;
+package test.com.blootoothtester.network.nwlayer;
 
 import android.support.annotation.Nullable;
 

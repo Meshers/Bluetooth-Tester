@@ -52,6 +52,7 @@ class AckInterpreter {
 
     interface Notifier {
         void onMissingCleared(byte missingAddr, byte missingSeqId);
+        void onNewMissing(byte missingAddr, byte missingSeqId);
     }
 
     // maps a missing message to the addrs of people missing it
@@ -88,6 +89,9 @@ class AckInterpreter {
         return counter;
     }
 
+
+    // TODO: Add timestamp for each missing and remove old guys. This prevents DoS by someone
+    // dropping from the network
     public void reset() {
         mMissingMap = new HashMap<>();
         mMisserMap = new HashMap<>();

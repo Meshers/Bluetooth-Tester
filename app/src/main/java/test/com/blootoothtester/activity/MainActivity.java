@@ -23,6 +23,7 @@ import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
 import test.com.blootoothtester.network.linklayer.DeviceDiscoveryHandler;
 import test.com.blootoothtester.network.linklayer.LinkLayerManager;
 import test.com.blootoothtester.network.linklayer.LinkLayerPdu;
+import test.com.blootoothtester.network.linklayer.LlMessage;
 import test.com.blootoothtester.util.Logger;
 
 public class MainActivity extends AppCompatActivity {
@@ -85,12 +86,12 @@ public class MainActivity extends AppCompatActivity {
             private HashMap<Byte, String> mCurrentResponseMap = new HashMap<>();
 
             @Override
-            public void handleDiscovery(LinkLayerPdu receivedPacket) {
-                mLogger.d("MainActivity", "Packet for " + receivedPacket.getToAddress()
-                        + " received from " + receivedPacket.getFromAddress() + " with content"
-                        + receivedPacket.getDataAsString());
-                mCurrentResponseMap.put(receivedPacket.getFromAddress(),
-                        receivedPacket.getDataAsString());
+            public void handleDiscovery(LlMessage llMessage) {
+                mLogger.d("MainActivity", "Packet for " + llMessage.getToAddress()
+                        + " received from " + llMessage.getFromAddress() + " with content"
+                        + llMessage.getDataAsString());
+                mCurrentResponseMap.put(llMessage.getFromAddress(),
+                        llMessage.getDataAsString());
                 mBtArrayAdapter.clear();
                 for (Byte fromId : mCurrentResponseMap.keySet()) {
                     mBtArrayAdapter.add("UserId: " + fromId

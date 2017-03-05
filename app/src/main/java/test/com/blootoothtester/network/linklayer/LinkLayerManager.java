@@ -34,8 +34,8 @@ public class LinkLayerManager {
             }
 
             @Override
-            public void sendUpperLayer(LinkLayerPdu pdu) {
-                mDiscoveryHandler.handleDiscovery(pdu);
+            public void sendUpperLayer(LlMessage message) {
+                mDiscoveryHandler.handleDiscovery(message);
             }
         };
 

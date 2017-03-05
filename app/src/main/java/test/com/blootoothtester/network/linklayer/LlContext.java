@@ -4,7 +4,9 @@ import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import test.com.blootoothtester.util.Constants;
@@ -19,7 +21,7 @@ public class LlContext {
     public interface Callback {
         void transmitPdu(LinkLayerPdu pdu);
 
-        void sendUpperLayer(LinkLayerPdu pdu);
+        void sendUpperLayer(LlMessage message);
     }
 
     private final byte mSessionId;
@@ -33,9 +35,12 @@ public class LlContext {
     private long mLastOwnMessageTime;
     private final AckInterpreter mAckInterpreter;
     private final Handler mRepeatHandler;
+    private boolean mBusy = false;
 
     private static final int REPEAT_HANDLER_WHAT_SCHEDULED = 1;
     private static final int REPEAT_HANDLER_WHAT_ABRUPT = 2;
+
+    public static final byte DEFAULT_SEQ_ID = 1;
 
 
     @SuppressLint("HandlerLeak")
@@ -46,7 +51,7 @@ public class LlContext {
         mAckArray = new byte[maxUsers];
         // as 0 will end up truncating it
         for (int i = 0; i < mAckArray.length; i++) {
-            mAckArray[i] = 1;
+            mAckArray[i] = DEFAULT_SEQ_ID;
         }
 
         mAckInterpreter = new AckInterpreter(
@@ -56,6 +61,14 @@ public class LlContext {
                         if (mCurrentPdu.getType() == LinkLayerPdu.Type.REPEAT
                                 && mCurrentPdu.getFromAddress() == missingAddr
                                 && mCurrentPdu.getSequenceId() == missingSeqId) {
+                            mRepeatHandler.removeCallbacksAndMessages(null);
+                            mRepeatHandler.sendEmptyMessage(REPEAT_HANDLER_WHAT_ABRUPT);
+                        }
+                    }
+
+                    @Override
+                    public void onNewMissing(byte missingAddr, byte missingSeqId) {
+                        if (!mBusy) {
                             mRepeatHandler.removeCallbacksAndMessages(null);
                             mRepeatHandler.sendEmptyMessage(REPEAT_HANDLER_WHAT_ABRUPT);
                         }
@@ -72,6 +85,7 @@ public class LlContext {
                 boolean nextRepeatSet = false;
 
                 if (counter.size() != 0) {
+                    mBusy = true;
                     Random rnd = new Random();
                     int i = rnd.nextInt(counter.keySet().size());
 
@@ -99,6 +113,11 @@ public class LlContext {
                                 LinkLayerPdu.getRepeatPdu(mAckArray, mOwnAddr, oldPdu)
                         );
                     }
+                } else {
+                    long timeSinceOwnMessage = System.currentTimeMillis() - mLastOwnMessageTime;
+                    if (timeSinceOwnMessage >= Constants.MIN_OWN_MSG_TIME_MS) {
+                        mBusy = false;
+                    }
                 }
 
                 if (msg.what == REPEAT_HANDLER_WHAT_SCHEDULED) {
@@ -124,18 +143,16 @@ public class LlContext {
         switch (pdu.getType()) {
             case MESSAGE:
             case REPEAT:
-                boolean isNewAcceptedPdu = addPdu(pdu);
+                List<LlMessage> newlyAccepted = addPdu(pdu);
 
-                if (isNewAcceptedPdu) {
+                if (newlyAccepted.size() > 0) {
                     sendUpdatedAckArray();
                 }
 
-                if (isNewAcceptedPdu && (pdu.getToAddress() == Constants.PDU_BROADCAST_ADDR ||
-                        pdu.getToAddress() == mOwnAddr)) {
+                for(LlMessage message: newlyAccepted) {
                     // send message to upper layer
-                    mCallback.sendUpperLayer(pdu);
+                    mCallback.sendUpperLayer(message);
                 }
-                break;
         }
     }
 
@@ -147,13 +164,13 @@ public class LlContext {
     /**
      * adds a received PDU to the LLContext if the message is not out of order and not a repeat,
      * else ignores the message
-     * Also compares the AckArray with
+     * Also compares the AckArray with AckArray of received pdu
      *
      * @param pdu the pdu to process
-     * @return true if this is a new PDU which has been accepted into the context (not necessarily
-     * destined for this device though), false otherwise
+     * @return empty list if no new PDUs that extend the current valid portion of window, else list
+     * of one more more PDUs that have become valid by the addition of the passed PDU
      */
-    public boolean addPdu(LinkLayerPdu pdu) {
+    public List<LlMessage> addPdu(LinkLayerPdu pdu) {
         byte fromAddress = pdu.getFromAddress();
         byte toAddress = pdu.getToAddress();
 
@@ -166,20 +183,24 @@ public class LlContext {
                 break;
         }
 
+        List<LlMessage> newlyAccepted = new ArrayList<>();
+
         LlUser sendingUser = getUserFor(fromAddress);
 
-        byte sequenceId = pdu.getSequenceId();
-        if (sequenceId != getAckValueFor(fromAddress) + 1) {
-            // this packet is out of order or redundant, ignore it
-            // TODO: Allow for storing of out of order packets too, e.g. based on a window
-            return false;
-        }
+        byte oldLastValidSeqId = sendingUser.getLastConsecutiveSeqId();
 
         sendingUser.addMessage(new LlMessage(fromAddress, toAddress, pdu.getSequenceId(),
                 pdu.getData()));
-        // TODO: This is tightly coupled with the way we allocate addresses (starting from 1)
-        setInAckArray(sendingUser.getAddr(), sequenceId);
-        return true;
+
+        byte newLastValidSeqId = sendingUser.getLastConsecutiveSeqId();
+
+        for (byte seqId = (byte) (oldLastValidSeqId + 1); seqId <= newLastValidSeqId; seqId++) {
+            newlyAccepted.add(sendingUser.getMessageWithSequenceId(seqId));
+        }
+
+        setInAckArray(sendingUser.getAddr(), newLastValidSeqId);
+
+        return newlyAccepted;
     }
 
     private void startRepeatLooper() {
@@ -215,6 +236,8 @@ public class LlContext {
         byte newSequenceId = (byte) (getAckValueFor(mOwnAddr) + 1);
 
         setInAckArray(mOwnAddr, newSequenceId);
+        // no need to separately update Ack array in published beacon as the PDU itself contains it
+
         getUserFor(mOwnAddr).addMessage(
                 new LlMessage(mOwnAddr, toAddr, newSequenceId, data)
         );
@@ -228,6 +251,7 @@ public class LlContext {
                 data);
 
         mLastOwnMessageTime = System.currentTimeMillis();
+        mBusy = true;
         sendPduToLowerLayer(pdu);
     }
 

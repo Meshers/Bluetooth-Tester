@@ -61,8 +61,8 @@ public class LlContext {
     /**
      * adds a received PDU to the LLContext if it is not out of order and not a repeat, else ignores
      * @param pdu the pdu to process
-     * @return if this is a new PDU which has been accepted into the context (not necessarily
-     * destined for this device though)
+     * @return true if this is a new PDU which has been accepted into the context (not necessarily
+     * destined for this device though), false otherwise
      */
     public boolean addPdu(LinkLayerPdu pdu) {
         byte fromAddress = pdu.getFromAddress();
@@ -86,7 +86,7 @@ public class LlContext {
     }
 
     public int getAckValueFor(byte addr) {
-        return mAckArray[addr - 1];
+        return mAckArray[AckArrayUtils.getIndexFromAddress(addr)];
     }
 
     public LlUser getUserFor(byte fromAddress) {
@@ -98,7 +98,7 @@ public class LlContext {
     }
 
     private void setInAckArray(byte addr, byte sequenceId) {
-        mAckArray[addr - 1] = sequenceId;
+        mAckArray[AckArrayUtils.getIndexFromAddress(addr)] = sequenceId;
     }
 
     /**

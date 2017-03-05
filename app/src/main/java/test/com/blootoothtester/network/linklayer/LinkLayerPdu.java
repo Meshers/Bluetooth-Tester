@@ -47,6 +47,7 @@ public class LinkLayerPdu {
 
     private final static int PDU_HEADER_BYTES = PDU_PREFIX_BYTES
             + PDU_SESSION_ID_BYTES
+            + PDU_TYPE_BYTES
             + PDU_ACK_ARRAY_BYTES
             + PDU_SEQ_ID_BYTES
             + ADDR_SIZE_BYTES * 2;
@@ -117,12 +118,21 @@ public class LinkLayerPdu {
     }
 
 
+    /**
+     * adds 1 to ordinal value of type as encoding since 0 truncates BT string
+     * @return type encoded into a single byte
+     */
     private static byte getTypeEncoded(Type type) {
         return (byte) (type.ordinal() + 1);
     }
 
+    /**
+     * subtracts 1 from ordinal value of type and uses it to obtain the Type object,
+     * as 1 is added to the ordinal value in encoding
+     * @return Type that represents the given byte
+     */
     private static Type getTypeDecoded(byte type) {
-        return Type.values()[type];
+        return Type.values()[type - 1];
     }
 
     private byte[] encode() {

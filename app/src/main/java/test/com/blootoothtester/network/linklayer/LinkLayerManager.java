@@ -17,6 +17,7 @@ import test.com.blootoothtester.util.Logger;
 
 public class LinkLayerManager {
     private MyBluetoothAdapter mBluetoothAdapter;
+    private BroadcastReceiver mBroadcastReceiver;
     private DeviceDiscoveryHandler mDiscoveryHandler;
     private LlContext mLlContext;
     private Logger mLogger = new Logger();
@@ -50,7 +51,7 @@ public class LinkLayerManager {
         // check started just for debugging purposes
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
 
-        BroadcastReceiver bReceiver = new BroadcastReceiver() {
+        mBroadcastReceiver = new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
                 System.out.println("ACTION:" + intent.getAction());
                 String action = intent.getAction();
@@ -75,7 +76,11 @@ public class LinkLayerManager {
             }
         };
 
-        bluetoothAdapter.getContext().registerReceiver(bReceiver, filter);
+        mBluetoothAdapter.getContext().registerReceiver(mBroadcastReceiver, filter);
+    }
+
+    public void cleanUp() {
+        mBluetoothAdapter.getContext().unregisterReceiver(mBroadcastReceiver);
     }
 
     public void startReceiving() {

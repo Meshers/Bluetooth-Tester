@@ -12,10 +12,11 @@ import java.lang.reflect.Method;
 
 /**
  * AUTHOR: sarahchristina on 1/10/17.
+ * AUTHOR: aphilip - added reflection for longer discovery periods
  */
 public class MyBluetoothAdapter {
 
-    private static final int REQUEST_ENABLE_BT = 1;
+    public static final int REQUEST_ENABLE_BT = 1;
 
     private BluetoothAdapter myBluetoothAdapter;
 

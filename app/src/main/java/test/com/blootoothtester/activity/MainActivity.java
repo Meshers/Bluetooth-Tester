@@ -1,14 +1,11 @@
 package test.com.blootoothtester.activity;
 
-import android.net.Uri;
-import android.os.Build;
+import android.content.Intent;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 
-import android.content.Intent;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -22,13 +19,14 @@ import test.com.blootoothtester.R;
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
 import test.com.blootoothtester.network.linklayer.DeviceDiscoveryHandler;
 import test.com.blootoothtester.network.linklayer.LinkLayerManager;
-import test.com.blootoothtester.network.linklayer.LinkLayerPdu;
 import test.com.blootoothtester.network.linklayer.LlMessage;
 import test.com.blootoothtester.util.Logger;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button mOnBtn;
+    private Button mSendBtn;
+    private Button mResetBtn;
+
     private EditText mToId;
     private EditText mBtMessage;
 
@@ -53,33 +51,47 @@ public class MainActivity extends AppCompatActivity {
 
         mBluetoothAdapter = new MyBluetoothAdapter(MainActivity.this);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // this takes care of letting the user add the WRITE_SETTINGS permission
-            if (!Settings.System.canWrite(this)) {
-                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS);
-                intent.setData(Uri.parse("package:" + this.getPackageName()));
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-            }
-        }
-
 
         if (!mBluetoothAdapter.isSupported()) {
-            mOnBtn.setEnabled(false);
+            mSendBtn.setEnabled(false);
+            mResetBtn.setEnabled(false);
 
             Toast.makeText(getApplicationContext(), "Your device does not support Bluetooth",
                     Toast.LENGTH_LONG).show();
         } else {
 
-            mOnBtn.setOnClickListener(new OnClickListener() {
+            mSendBtn.setOnClickListener(new OnClickListener() {
 
                 @Override
                 public void onClick(View v) {
                     sendMessage(mBtMessage.getText().toString());
                 }
             });
+
+            mResetBtn.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
         }
 
+        initializeNetworkComponents();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == MyBluetoothAdapter.REQUEST_ENABLE_BT) {
+            mBluetoothAdapter.activityResult(requestCode, resultCode);
+        }
+    }
+
+    public void startReceiving() {
+        Toast.makeText(MainActivity.this, "Starting to receive", Toast.LENGTH_SHORT).show();
+        mLinkLayerManager.startReceiving();
+    }
+
+    public void initializeNetworkComponents() {
 
         DeviceDiscoveryHandler discoveryHandler = new DeviceDiscoveryHandler() {
 
@@ -101,6 +113,10 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        if (mLinkLayerManager != null) {
+            mLinkLayerManager.cleanUp();
+        }
+
         mLinkLayerManager = new LinkLayerManager(
                 getIntent().getByteExtra(EXTRA_OWN_ADDRESS, (byte) -1),
                 mBluetoothAdapter,
@@ -110,16 +126,12 @@ public class MainActivity extends AppCompatActivity {
         startReceiving();
     }
 
-    public void startReceiving() {
-        Toast.makeText(MainActivity.this, "Starting to receive", Toast.LENGTH_SHORT).show();
-        mLinkLayerManager.startReceiving();
-    }
 
     public void initialize() {
-
         mToId = (EditText) findViewById(R.id.et_to_id);
         mBtMessage = (EditText) findViewById(R.id.bluetooth_message);
-        mOnBtn = (Button) findViewById(R.id.send);
+        mSendBtn = (Button) findViewById(R.id.send_btn);
+        mResetBtn = (Button) findViewById(R.id.reset_btn);
         ListView myListView = (ListView) findViewById(R.id.listView1);
 
         // create the arrayAdapter that contains the BTDevices, and set it to the ListView

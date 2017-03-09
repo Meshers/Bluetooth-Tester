@@ -183,6 +183,11 @@ public class LlContext {
                 break;
         }
 
+
+        if (fromAddress == mOwnAddr) {
+            return new ArrayList<>();
+        }
+
         List<LlMessage> newlyAccepted = new ArrayList<>();
 
         LlUser sendingUser = getUserFor(fromAddress);

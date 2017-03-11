@@ -13,7 +13,9 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import test.com.blootoothtester.R;
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
@@ -95,19 +97,27 @@ public class MainActivity extends AppCompatActivity {
 
         DeviceDiscoveryHandler discoveryHandler = new DeviceDiscoveryHandler() {
 
-            private HashMap<Byte, String> mCurrentResponseMap = new HashMap<>();
+            private HashMap<Byte, List<String>> mCurrentResponseMap = new HashMap<>();
 
             @Override
             public void handleDiscovery(LlMessage llMessage) {
                 mLogger.d("MainActivity", "Packet for " + llMessage.getToAddress()
                         + " received from " + llMessage.getFromAddress() + " with content"
                         + llMessage.getDataAsString());
-                mCurrentResponseMap.put(llMessage.getFromAddress(),
-                        llMessage.getDataAsString());
+
+                byte fromAddress = llMessage.getFromAddress();
+                if (!mCurrentResponseMap.containsKey(fromAddress)) {
+                    mCurrentResponseMap.put(fromAddress, new ArrayList<String>());
+                }
+
+                mCurrentResponseMap.get(llMessage.getFromAddress())
+                        .add(llMessage.getDataAsString());
                 mBtArrayAdapter.clear();
                 for (Byte fromId : mCurrentResponseMap.keySet()) {
-                    mBtArrayAdapter.add("UserId: " + fromId
-                            + "\n" + "Message: " + mCurrentResponseMap.get(fromId));
+                    for(String msg: mCurrentResponseMap.get(fromAddress)) {
+                        mBtArrayAdapter.add("UserId: " + fromId
+                                + "\n" + "Message: " + mCurrentResponseMap.get(fromId));
+                    }
                 }
                 mBtArrayAdapter.notifyDataSetChanged();
             }

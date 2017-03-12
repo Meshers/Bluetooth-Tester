@@ -60,7 +60,7 @@ class AckInterpreter {
     // maps a misser to the MissingMessages he has missed
     private HashMap<Byte, HashSet<MissingMessage>> mMisserMap = new HashMap<>();
 
-    public void handle(byte[] ownAckArray, byte[] receivedAckArray, byte otherArrayOwner) {
+    public synchronized void handle(byte[] ownAckArray, byte[] receivedAckArray, byte otherArrayOwner) {
         if (ownAckArray.length != receivedAckArray.length
                 || ownAckArray.length != Constants.MAX_USERS) {
             throw new IllegalArgumentException("arrays have different lengths: "
@@ -80,7 +80,7 @@ class AckInterpreter {
         }
     }
 
-    public HashMap<MissingMessage, Integer> getMissingCounter() {
+    public synchronized HashMap<MissingMessage, Integer> getMissingCounter() {
         HashMap<MissingMessage, Integer> counter = new HashMap<>();
         for (MissingMessage message : mMissingMap.keySet()) {
             counter.put(message, mMissingMap.get(message).size());
@@ -92,17 +92,25 @@ class AckInterpreter {
 
     // TODO: Add timestamp for each missing and remove old guys. This prevents DoS by someone
     // dropping from the network
-    public void reset() {
+    public synchronized void reset() {
         mMissingMap = new HashMap<>();
         mMisserMap = new HashMap<>();
     }
 
-    private void removeIfMissingResolved(byte misserAddr, byte missingAddr,
+    private synchronized void removeIfMissingResolved(byte misserAddr, byte missingAddr,
                                          byte currSequenceId) {
         if (!mMisserMap.containsKey(misserAddr)) {
             return;
         }
-        for (MissingMessage missingMessage : mMisserMap.get(misserAddr)) {
+
+        HashMap<Byte, HashSet<MissingMessage>> tempMap = new HashMap<>();
+        for(Byte key: mMisserMap.keySet()) {
+            HashSet<MissingMessage> tempSet = new HashSet<>();
+            tempSet.addAll(mMisserMap.get(key));
+            tempMap.put(key, tempSet);
+        }
+
+        for (MissingMessage missingMessage : tempMap.get(misserAddr)) {
             if (missingMessage.mFromId == missingAddr
                     && missingMessage.mSequenceId <= currSequenceId) {
                 removeMissing(misserAddr, missingAddr, missingMessage.mSequenceId);
@@ -110,7 +118,7 @@ class AckInterpreter {
         }
     }
 
-    private void addMissing(byte misserAddr, byte missingAddr, byte missingSequenceId) {
+    private synchronized void addMissing(byte misserAddr, byte missingAddr, byte missingSequenceId) {
         MissingMessage missingMessage = new MissingMessage(missingAddr, missingSequenceId);
         // OPS:
         // 1. We add him to map of missing messages to set of people missing them
@@ -133,7 +141,7 @@ class AckInterpreter {
         missingMessages.add(missingMessage);
     }
 
-    private void removeMissing(byte misserAddr, byte missingAddr, byte missingSequenceId) {
+    private synchronized void removeMissing(byte misserAddr, byte missingAddr, byte missingSequenceId) {
         MissingMessage missingMessage = new MissingMessage(missingAddr, missingSequenceId);
         // OPS:
         // 1. We remove him from map of missing messages to set of people missing them

@@ -150,6 +150,8 @@ public class LlContext {
                 }
 
                 for(LlMessage message: newlyAccepted) {
+                    if (message.getToAddress() == Constants.PDU_BROADCAST_ADDR
+                            || message.getToAddress() == mOwnAddr)
                     // send message to upper layer
                     mCallback.sendUpperLayer(message);
                 }

@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     LinkLayerManager mLinkLayerManager;
 
     private ArrayAdapter<String> mBtArrayAdapter;
+    private HashMap<Byte, List<String>> mCurrentResponseMap;
 
     private Logger mLogger = new Logger();
 
@@ -73,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
             mResetBtn.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    initializeNetworkComponents();
                 }
             });
         }
@@ -94,10 +95,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void initializeNetworkComponents() {
+        mCurrentResponseMap = new HashMap<>();
 
         DeviceDiscoveryHandler discoveryHandler = new DeviceDiscoveryHandler() {
-
-            private HashMap<Byte, List<String>> mCurrentResponseMap = new HashMap<>();
 
             @Override
             public void handleDiscovery(LlMessage llMessage) {
@@ -110,18 +110,18 @@ public class MainActivity extends AppCompatActivity {
                     mCurrentResponseMap.put(fromAddress, new ArrayList<String>());
                 }
 
-                mCurrentResponseMap.get(llMessage.getFromAddress())
-                        .add(llMessage.getDataAsString());
+                mCurrentResponseMap.get(fromAddress).add(llMessage.getDataAsString());
                 mBtArrayAdapter.clear();
                 for (Byte fromId : mCurrentResponseMap.keySet()) {
-                    for(String msg: mCurrentResponseMap.get(fromAddress)) {
+                    for(String msg: mCurrentResponseMap.get(fromId)) {
                         mBtArrayAdapter.add("UserId: " + fromId
-                                + "\n" + "Message: " + mCurrentResponseMap.get(fromId));
+                                + "\n" + "Message: " + msg);
                     }
                 }
                 mBtArrayAdapter.notifyDataSetChanged();
             }
         };
+        mBtArrayAdapter.clear();
 
         if (mLinkLayerManager != null) {
             mLinkLayerManager.cleanUp();

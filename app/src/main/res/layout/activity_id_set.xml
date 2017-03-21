@@ -46,4 +46,11 @@
         android:onClick="onNextClick"
         android:text="@string/activity_id_set_next"/>
 
+    <Button
+        android:id="@+id/id_act_hotspot_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/activity_id_hotspot_btn"/>
+
 </LinearLayout>

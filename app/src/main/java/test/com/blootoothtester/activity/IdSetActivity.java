@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 
 import test.com.blootoothtester.R;
@@ -17,6 +18,7 @@ public class IdSetActivity extends Activity {
 
     private EditText mEtOwnAddr;
     private EditText mEtSessionId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,6 +26,14 @@ public class IdSetActivity extends Activity {
 
         mEtOwnAddr = (EditText) findViewById(R.id.et_own_addr);
         mEtSessionId = (EditText) findViewById(R.id.et_session_id);
+
+        Button hotspotTestBtn = (Button) findViewById(R.id.id_act_hotspot_btn);
+        hotspotTestBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startHotspotActivity();
+            }
+        });
 
         makePermissionsRequest();
     }
@@ -47,7 +57,7 @@ public class IdSetActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        for(int grantResult: grantResults) {
+        for (int grantResult : grantResults) {
             if (grantResult != PackageManager.PERMISSION_GRANTED) {
                 makePermissionsRequest();
                 break;
@@ -70,5 +80,9 @@ public class IdSetActivity extends Activity {
         intent.putExtra(MainActivity.EXTRA_SESSION_ID, Byte.parseByte(sessionId));
 
         startActivity(intent);
+    }
+
+    public void startHotspotActivity() {
+        HotspotActivity.startHotspotActivity(this);
     }
 }

@@ -5,6 +5,10 @@
     <string name="activity_id_set_session_id">Session ID</string>
     <string name="activity_id_set_next">Next</string>
     <string name="activity_id_title">Enter Your Address</string>
+    <string name="activity_id_hotspot_btn">Test Hotspot</string>
+
+    <string name="activity_hotspot_btn_serve">Send File</string>
+    <string name="activity_hotspot_btn_fetch">Fetch File</string>
 
     <string name="action_settings">Settings</string>
     <string name="Text">Status: -</string>

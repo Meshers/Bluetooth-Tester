@@ -31,7 +31,6 @@ public class LinkLayerPdu {
     private byte mRepeaterId; // to know who's repeating besides who is being repeated
 
 
-
     // TODO: Allow NACK to be requested from specific phones e.g. phones whose responses you
     // receive a lot, who are also currently not transmitting a message of their own or a response
     // to a NACK
@@ -104,10 +103,10 @@ public class LinkLayerPdu {
     }
 
     /**
-     * @param ackArray the AckArray of the repeater (own ack array)
+     * @param ackArray   the AckArray of the repeater (own ack array)
      * @param repeaterId the ID of the device repeating the message (own ID)
-     * @param repeatPdu the PDU being re-broadcasted. Kept it this way in case we remove LlMessage
-     *                  in the future
+     * @param repeatPdu  the PDU being re-broadcasted. Kept it this way in case we remove LlMessage
+     *                   in the future
      * @return a REPEAT type LL PDU
      */
     public static LinkLayerPdu getRepeatPdu(byte[] ackArray, byte repeaterId,
@@ -124,13 +123,13 @@ public class LinkLayerPdu {
         );
     }
 
-    public static boolean isValidPdu(String encoded) {
-        return encoded != null && isValidPdu(encoded.getBytes(CHARSET));
+    public static boolean isValidPdu(String encoded, byte sessionId) {
+        return encoded != null && isValidPdu(encoded.getBytes(CHARSET), sessionId);
     }
 
-    public static boolean isValidPdu(byte[] encoded) {
+    public static boolean isValidPdu(byte[] encoded, byte sessionId) {
         byte[] prefix = getPduPrefix();
-        if (encoded.length < prefix.length + 2 * ADDR_SIZE_BYTES) {
+        if (encoded.length < prefix.length + PDU_SESSION_ID_BYTES + 2 * ADDR_SIZE_BYTES) {
             return false;
         }
         for (int i = 0; i < prefix.length; i++) {
@@ -138,7 +137,7 @@ public class LinkLayerPdu {
                 return false;
             }
         }
-        return true;
+        return encoded[prefix.length] == sessionId;
     }
 
     public String getAsString() {
@@ -148,6 +147,7 @@ public class LinkLayerPdu {
 
     /**
      * adds 1 to ordinal value of type as encoding since 0 truncates BT string
+     *
      * @return type encoded into a single byte
      */
     private static byte getTypeEncoded(Type type) {
@@ -157,6 +157,7 @@ public class LinkLayerPdu {
     /**
      * subtracts 1 from ordinal value of type and uses it to obtain the Type object,
      * as 1 is added to the ordinal value in encoding
+     *
      * @return Type that represents the given byte
      */
     private static Type getTypeDecoded(byte type) {
@@ -193,8 +194,8 @@ public class LinkLayerPdu {
         System.arraycopy(mAckArray, 0, encoded, nextFieldIndex, mAckArray.length);
         nextFieldIndex += PDU_ACK_ARRAY_BYTES;
         encoded[nextFieldIndex] =
-        // add Sequence ID for message
-        encoded[nextFieldIndex] = mSequenceId;
+                // add Sequence ID for message
+                encoded[nextFieldIndex] = mSequenceId;
         nextFieldIndex += PDU_SEQ_ID_BYTES;
         // add fromID
         encoded[nextFieldIndex] = mFromId;

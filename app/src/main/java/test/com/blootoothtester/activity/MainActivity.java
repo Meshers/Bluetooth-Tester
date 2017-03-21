@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private Logger mLogger = new Logger();
 
     public final static String EXTRA_OWN_ADDRESS = "OWN_ADDRESS";
+    public final static String EXTRA_SESSION_ID = "SESSION_ID";
 
 
     @Override
@@ -129,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
         mLinkLayerManager = new LinkLayerManager(
                 getIntent().getByteExtra(EXTRA_OWN_ADDRESS, (byte) -1),
+                getIntent().getByteExtra(EXTRA_SESSION_ID, (byte) -1),
                 mBluetoothAdapter,
                 discoveryHandler
         );

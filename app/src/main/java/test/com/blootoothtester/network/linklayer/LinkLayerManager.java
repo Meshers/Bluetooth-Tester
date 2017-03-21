@@ -22,7 +22,7 @@ public class LinkLayerManager {
     private LlContext mLlContext;
     private Logger mLogger = new Logger();
 
-    public LinkLayerManager(byte ownAddr, MyBluetoothAdapter bluetoothAdapter,
+    public LinkLayerManager(byte ownAddr, final byte sessionId, MyBluetoothAdapter bluetoothAdapter,
                             DeviceDiscoveryHandler discoveryHandler) {
         mBluetoothAdapter = bluetoothAdapter;
         mDiscoveryHandler = discoveryHandler;
@@ -40,7 +40,7 @@ public class LinkLayerManager {
             }
         };
 
-        mLlContext = new LlContext((byte) 1, Constants.MAX_USERS, ownAddr, callback);
+        mLlContext = new LlContext(sessionId, Constants.MAX_USERS, ownAddr, callback);
         mLlContext.sendPdu(Constants.PDU_BROADCAST_ADDR, "init".getBytes(Charset.forName("UTF-8")));
 
         // register for BT discovery events
@@ -68,7 +68,11 @@ public class LinkLayerManager {
                 System.out.println("DEVICE:" + device.getName() + ":" + device.getAddress());
 
                 // if it isn't part of our clique, kick it out
-                if (!LinkLayerPdu.isValidPdu(device.getName())) return;
+                // TODO: Only LlContext should know about sessionId, refactor to reflect that
+                // keeping this here currently as as of now LlContext deals only with LlPDUs
+                // also debugging concerns arise out of doing a simple try-catch to filter out
+                // non matching PDU's
+                if (!LinkLayerPdu.isValidPdu(device.getName(), sessionId)) return;
 
                 LinkLayerPdu pdu = LinkLayerPdu.from(device.getName());
 
@@ -88,7 +92,7 @@ public class LinkLayerManager {
         mBluetoothAdapter.find();
     }
 
-    public void sendData(byte[] packet, byte toAddr) {
+    private void sendData(byte[] packet, byte toAddr) {
         mLlContext.sendPdu(toAddr, packet);
     }
 
@@ -99,5 +103,4 @@ public class LinkLayerManager {
             e.printStackTrace();
         }
     }
-
 }

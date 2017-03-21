@@ -16,12 +16,14 @@ import android.content.pm.PackageManager;
 public class IdSetActivity extends Activity {
 
     private EditText mEtOwnAddr;
+    private EditText mEtSessionId;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_id_set);
 
         mEtOwnAddr = (EditText) findViewById(R.id.et_own_addr);
+        mEtSessionId = (EditText) findViewById(R.id.et_session_id);
 
         makePermissionsRequest();
     }
@@ -59,8 +61,13 @@ public class IdSetActivity extends Activity {
         if (addrStr.equals("")) {
             return;
         }
+        String sessionId = mEtSessionId.getText().toString();
+        if (sessionId.equals("")) {
+            return;
+        }
 
         intent.putExtra(MainActivity.EXTRA_OWN_ADDRESS, Byte.parseByte(addrStr));
+        intent.putExtra(MainActivity.EXTRA_SESSION_ID, Byte.parseByte(sessionId));
 
         startActivity(intent);
     }

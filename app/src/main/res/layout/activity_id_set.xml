@@ -25,6 +25,20 @@
         android:inputType="number"
         android:text="@string/default_id" />
 
+    <TextView
+        android:layout_marginTop="10dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/activity_id_set_session_id" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/et_session_id"
+        android:inputType="number"
+        android:text="@string/default_session_id" />
+
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

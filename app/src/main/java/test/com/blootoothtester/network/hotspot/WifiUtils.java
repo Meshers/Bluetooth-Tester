@@ -1,12 +1,14 @@
 package test.com.blootoothtester.network.hotspot;
 
-import android.content.*;
-import android.net.wifi.*;
+import android.content.Context;
+import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiManager;
 import android.widget.Toast;
 
 import java.lang.reflect.*;
 
-public class HotspotHelper {
+
+public class WifiUtils {
 
     //check whether wifi hotspot on or off
     public static boolean isHotspotOn(Context context) {
@@ -35,14 +37,42 @@ public class HotspotHelper {
             WifiConfiguration wifiConfig = (WifiConfiguration) getConfigMethod.invoke(wifiManager);
 
             wifiConfig.SSID = newName;
+
             Method method = wifiManager.getClass().getMethod("setWifiApEnabled",
                     WifiConfiguration.class, boolean.class);
+            // we need to turn the hotspot on first as if it is already on somtimes the name
+            // does not change
+            method.invoke(wifiManager, null, false);
             method.invoke(wifiManager, wifiConfig, true);
+
             return true;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public static boolean disableWifi(Context context) {
+        // commented out method DOES NOT WORK :( tested on OPO
+//        WifiManager wifiManager = (WifiManager) context.getApplicationContext()
+//                .getSystemService(Context.WIFI_SERVICE);
+//        return wifiManager.setWifiEnabled(false);
+        WifiManager wifiManager = (WifiManager) context.getApplicationContext()
+                .getSystemService(Context.WIFI_SERVICE);
+        try {
+            Method getConfigMethod = wifiManager.getClass().getMethod("getWifiApConfiguration");
+            WifiConfiguration wifiConfig = (WifiConfiguration) getConfigMethod.invoke(wifiManager);
+
+            Method method = wifiManager.getClass().getMethod("setWifiApEnabled",
+                    WifiConfiguration.class, boolean.class);
+            // we need to turn the hotspot on first as if it is already on somtimes the name
+            // does not change
+            method.invoke(wifiManager, null, false);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 //    public static boolean setHotspotName(String newName, Context context) {
@@ -88,5 +118,9 @@ public class HotspotHelper {
 //        }
 
         return true;
+    }
+
+    public static void startWifiScan(WifiManager wifiManager) {
+        wifiManager.startScan();
     }
 }

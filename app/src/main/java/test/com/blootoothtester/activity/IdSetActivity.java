@@ -83,6 +83,15 @@ public class IdSetActivity extends Activity {
     }
 
     public void startHotspotActivity() {
-        HotspotActivity.startHotspotActivity(this);
+        String addrStr = mEtOwnAddr.getText().toString();
+        if (addrStr.equals("")) {
+            return;
+        }
+        String sessionId = mEtSessionId.getText().toString();
+        if (sessionId.equals("")) {
+            return;
+        }
+        HotspotActivity.startHotspotActivity(this, Byte.parseByte(addrStr),
+                Byte.parseByte(sessionId));
     }
 }

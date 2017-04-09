@@ -10,4 +10,12 @@ public class ArrayUtil {
 
         return bArr;
     }
+
+    public static byte[] toPrimitiveByteArray(Byte[] arr) {
+        byte newArr[] = new byte[arr.length];
+        for (int i = 0; i < newArr.length; i++) {
+            newArr[i] = arr[i];
+        }
+        return newArr;
+    }
 }

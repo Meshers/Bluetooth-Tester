@@ -65,6 +65,10 @@ public class MyBluetoothAdapter {
         }
     }
 
+    public void makeUndiscoverable() {
+        makeDiscoverable(1);
+    }
+
     private void makeDiscoverable(int timeOut) {
         Class<?> baClass = BluetoothAdapter.class;
         Method[] methods = baClass.getDeclaredMethods();

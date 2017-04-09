@@ -6,6 +6,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="test.com.blootoothtester.activity.HotspotActivity">
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/activity_hotspot_et_id"
+        android:gravity="center_horizontal"/>
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/activity_hotspot_et_msg"
+        android:gravity="center_horizontal"/>
+    <Button
+        android:id="@+id/hotspot_btn_send_msg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/activity_hotspot_btn_send_msg"
+        android:layout_gravity="center_horizontal"/>
     <Button
         android:id="@+id/hotspot_btn_serve"
         android:layout_width="wrap_content"

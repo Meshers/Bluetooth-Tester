@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network.linklayer;
+package test.com.blootoothtester.network.linklayer.bt;
 
 import android.annotation.SuppressLint;
 import android.os.Handler;

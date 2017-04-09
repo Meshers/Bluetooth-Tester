@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network.linklayer;
+package test.com.blootoothtester.network.linklayer.bt;
 
 import java.nio.charset.Charset;
 
@@ -14,7 +14,8 @@ public class LinkLayerPdu {
     // priority wise - MESSAGE > REPEAT
     enum Type {
         MESSAGE,
-        REPEAT
+        REPEAT,
+        INIT
     }
 
     private final byte mSessionId;
@@ -61,6 +62,12 @@ public class LinkLayerPdu {
             + PDU_ACK_ARRAY_BYTES
             + PDU_SEQ_ID_BYTES
             + ADDR_SIZE_BYTES * 3;
+
+    private final static int PDU_INIT_HEADER_BYTES = PDU_PREFIX_BYTES
+            + PDU_SESSION_ID_BYTES
+            + PDU_TYPE_BYTES
+            + PDU_ACK_ARRAY_BYTES
+            + ADDR_SIZE_BYTES;
 
     private final static int PAYLOAD_MAX_BYTES = TOT_SIZE - PDU_REPEAT_HEADER_BYTES;
 
@@ -123,6 +130,19 @@ public class LinkLayerPdu {
         );
     }
 
+    public static LinkLayerPdu getInitPdu(byte sessionId, byte[] ackArray, byte fromId) {
+        return new LinkLayerPdu(
+                sessionId,
+                ackArray,
+                (byte) 0,
+                fromId,
+                (byte) 0,
+                null,
+                Type.INIT,
+                (byte) 0
+        );
+    }
+
     public static boolean isValidPdu(String encoded, byte sessionId) {
         return encoded != null && isValidPdu(encoded.getBytes(CHARSET), sessionId);
     }
@@ -174,6 +194,10 @@ public class LinkLayerPdu {
             case REPEAT:
                 headerSize = PDU_REPEAT_HEADER_BYTES;
                 break;
+            case INIT:
+                headerSize = PDU_INIT_HEADER_BYTES;
+                break;
+
         }
         byte[] encoded = new byte[headerSize + mData.length];
         // add prefix
@@ -185,24 +209,27 @@ public class LinkLayerPdu {
         // add Type
         encoded[nextFieldIndex] = getTypeEncoded(mType);
         nextFieldIndex += PDU_TYPE_BYTES;
+        // add ACK array
+        System.arraycopy(mAckArray, 0, encoded, nextFieldIndex, mAckArray.length);
+        nextFieldIndex += PDU_ACK_ARRAY_BYTES;
+        // add fromID
+        encoded[nextFieldIndex] = mFromId;
+        nextFieldIndex += ADDR_SIZE_BYTES;
+        // if INIT, this is all we need
+        if (getType() == Type.INIT) {
+            return encoded;
+        }
         // if REPEAT add repeaterId
         if (getType() == Type.REPEAT) {
             encoded[nextFieldIndex] = getRepeaterAddress();
             nextFieldIndex += ADDR_SIZE_BYTES;
         }
-        // add ACK array
-        System.arraycopy(mAckArray, 0, encoded, nextFieldIndex, mAckArray.length);
-        nextFieldIndex += PDU_ACK_ARRAY_BYTES;
-        encoded[nextFieldIndex] =
-                // add Sequence ID for message
-                encoded[nextFieldIndex] = mSequenceId;
-        nextFieldIndex += PDU_SEQ_ID_BYTES;
-        // add fromID
-        encoded[nextFieldIndex] = mFromId;
-        nextFieldIndex += ADDR_SIZE_BYTES;
         // add toID
         encoded[nextFieldIndex] = mToId;
         nextFieldIndex += ADDR_SIZE_BYTES;
+        // add Sequence ID for message
+        encoded[nextFieldIndex] = mSequenceId;
+        nextFieldIndex += PDU_SEQ_ID_BYTES;
         // add the actual data to send
         System.arraycopy(mData, 0, encoded, nextFieldIndex, mData.length);
         return encoded;
@@ -217,25 +244,30 @@ public class LinkLayerPdu {
         // get type
         Type type = getTypeDecoded(encoded[nextFieldIndex]);
         nextFieldIndex += PDU_TYPE_BYTES;
+        // get ACK array
+        byte[] ackArray = new byte[Constants.MAX_USERS];
+        System.arraycopy(encoded, nextFieldIndex, ackArray, 0, ackArray.length);
+        nextFieldIndex += PDU_ACK_ARRAY_BYTES;
+        // get fromID
+        byte fromId = encoded[nextFieldIndex];
+        nextFieldIndex += ADDR_SIZE_BYTES;
+        // if INIT, we are done
+        if (type == Type.INIT) {
+            return new LinkLayerPdu(sessionId, ackArray, (byte) 0, fromId, (byte) 0, null, type,
+                    (byte) 0);
+        }
         // if REPEAT, get repeaterId
         byte repeaterId = 0;
         if (type == Type.REPEAT) {
             repeaterId = encoded[nextFieldIndex];
             nextFieldIndex += ADDR_SIZE_BYTES;
         }
-        // get ACK array
-        byte[] ackArray = new byte[Constants.MAX_USERS];
-        System.arraycopy(encoded, nextFieldIndex, ackArray, 0, ackArray.length);
-        nextFieldIndex += PDU_ACK_ARRAY_BYTES;
-        // get Sequence ID for message
-        byte sequenceId = encoded[nextFieldIndex];
-        nextFieldIndex += PDU_SEQ_ID_BYTES;
-        // get fromID
-        byte fromId = encoded[nextFieldIndex];
-        nextFieldIndex += ADDR_SIZE_BYTES;
         // get toID
         byte toId = encoded[nextFieldIndex];
         nextFieldIndex += ADDR_SIZE_BYTES;
+        // get Sequence ID for message
+        byte sequenceId = encoded[nextFieldIndex];
+        nextFieldIndex += PDU_SEQ_ID_BYTES;
         // get the actual data
         byte[] data = new byte[encoded.length - nextFieldIndex];
         System.arraycopy(encoded, nextFieldIndex, data, 0, data.length);

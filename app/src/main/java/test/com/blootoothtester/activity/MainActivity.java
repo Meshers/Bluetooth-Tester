@@ -19,9 +19,9 @@ import java.util.List;
 
 import test.com.blootoothtester.R;
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
-import test.com.blootoothtester.network.linklayer.DeviceDiscoveryHandler;
-import test.com.blootoothtester.network.linklayer.LinkLayerManager;
-import test.com.blootoothtester.network.linklayer.LlMessage;
+import test.com.blootoothtester.network.linklayer.bt.DeviceDiscoveryHandler;
+import test.com.blootoothtester.network.linklayer.bt.LinkLayerManager;
+import test.com.blootoothtester.network.linklayer.bt.LlMessage;
 import test.com.blootoothtester.util.Logger;
 
 public class MainActivity extends AppCompatActivity {

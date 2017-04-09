@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network.linklayer;
+package test.com.blootoothtester.network.linklayer.bt;
 
 class AckArrayUtils {
     static byte getAddressFromIndex(int i) {

@@ -1,4 +1,4 @@
-package test.com.blootoothtester.network.linklayer;
+package test.com.blootoothtester.network.linklayer.bt;
 
 import java.util.ArrayList;
 import java.util.List;

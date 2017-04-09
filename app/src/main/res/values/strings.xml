@@ -6,7 +6,10 @@
     <string name="activity_id_set_next">Next</string>
     <string name="activity_id_title">Enter Your Address</string>
     <string name="activity_id_hotspot_btn">Test Hotspot</string>
+    <string name="activity_hotspot_et_id">Enter Own Id</string>
+    <string name="activity_hotspot_et_msg">Enter Message</string>
 
+    <string name="activity_hotspot_btn_send_msg">Send Message</string>
     <string name="activity_hotspot_btn_serve">Send File</string>
     <string name="activity_hotspot_btn_fetch">Fetch File</string>
 

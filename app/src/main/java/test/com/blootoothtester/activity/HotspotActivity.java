@@ -13,8 +13,6 @@ import test.com.blootoothtester.network.hotspot.HotspotHelper;
 
 public class HotspotActivity extends AppCompatActivity {
 
-    private final static String HOTSPOT_NAME = "giggleGogglesHehehe";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,7 +27,7 @@ public class HotspotActivity extends AppCompatActivity {
         serveBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startHotspot();
+                startHotspot("lolzzz");
             }
         });
 
@@ -38,14 +36,14 @@ public class HotspotActivity extends AppCompatActivity {
         fetchBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                connectToHotspot();
+                connectToHotspot("lolzzz");
             }
         });
 
     }
 
-    public void startHotspot() {
-        if (!HotspotHelper.enableHotspot(this, HOTSPOT_NAME)) {
+    public void startHotspot(String name) {
+        if (!HotspotHelper.enableHotspot(this, name)) {
             Toast.makeText(this,
                     "Error enabling hotspot!!!! :O :O :O Please contact devs immediately!",
                     Toast.LENGTH_LONG).show();
@@ -55,8 +53,8 @@ public class HotspotActivity extends AppCompatActivity {
         }
     }
 
-    public void connectToHotspot() {
-        HotspotHelper.connectToWifi(HOTSPOT_NAME, this);
+    public void connectToHotspot(String name) {
+        HotspotHelper.connectToWifi(name, this);
     }
 
     public static void startHotspotActivity(Context context) {

@@ -41,6 +41,9 @@ public class WifiMessage {
     }
 
     public static boolean isValidWifiMessage(String encoded, byte sessionId) {
+        if (encoded == null) {
+            return false;
+        }
         byte[] encodedPrimitive;
         try {
             encodedPrimitive = Base64.decode(encoded, BASE64_FLAGS);

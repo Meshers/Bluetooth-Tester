@@ -33,6 +33,9 @@ public class BtMessage {
     }
 
     public static boolean isValid(String encoded, byte sessionId) {
+        if (encoded == null) {
+            return false;
+        }
         BtMessage btMessage;
         try {
             btMessage = decode(encoded);

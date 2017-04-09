@@ -1,13 +1,21 @@
 package test.com.blootoothtester.network.linklayer.wifi;
 
+import android.os.Handler;
+import android.os.Message;
+import android.os.SystemClock;
+
 import java.util.HashSet;
 
 import test.com.blootoothtester.util.Constants;
+
+import static test.com.blootoothtester.util.Constants.MIN_HOTSPOT_UPDATE_INTERVAL;
 
 public class WifiLlContext {
     private final byte mOwnAddress;
     private final byte mSessionId;
     private final Callback mCallback;
+
+    private long mLastWifiUpdateTimeMillis = 0;
 
     private WifiMessage mLastSentWifiMessage;
     private byte[] mOwnAckArray = getInitialAckArray();
@@ -96,6 +104,21 @@ public class WifiLlContext {
     }
 
     private void sendUpdatedWifiMessage() {
+        long currentTime = System.currentTimeMillis();
+        // this is so that the delay does not become negative if in that time the time gap
+        // exceeds the update interval
+        if (currentTime - mLastWifiUpdateTimeMillis < MIN_HOTSPOT_UPDATE_INTERVAL) {
+            new Handler().postDelayed(new Runnable() {
+                                          @Override
+                                          public void run() {
+                                              sendUpdatedWifiMessage();
+                                          }
+                                      },
+                    MIN_HOTSPOT_UPDATE_INTERVAL
+                            - (System.currentTimeMillis() - mLastWifiUpdateTimeMillis));
+            return;
+        }
+        mLastWifiUpdateTimeMillis = System.currentTimeMillis();
         mLastSentWifiMessage.setAckArray(mOwnAckArray);
         mCallback.transmitWifiMessage(mLastSentWifiMessage);
     }

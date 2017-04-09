@@ -10,4 +10,7 @@ public class Constants {
     public static final byte PDU_BROADCAST_ADDR = MAX_USERS + 1;
     public static final int NACK_CHECK_INTERVAL_MS = 12000;
     public static final int MIN_OWN_MSG_TIME_MS = 12000;
+
+    public static final int MIN_HOTSPOT_UPDATE_INTERVAL = 10000;
+    public static final int MIN_WIFI_SCAN_INTERVAL = 2000;
 }

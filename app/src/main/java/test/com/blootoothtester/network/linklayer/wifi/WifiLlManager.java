@@ -8,12 +8,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.Handler;
 import android.util.Log;
 
 import java.util.List;
 
 import test.com.blootoothtester.bluetooth.MyBluetoothAdapter;
 import test.com.blootoothtester.network.hotspot.WifiUtils;
+import test.com.blootoothtester.util.Constants;
 
 public class WifiLlManager {
 
@@ -74,6 +76,8 @@ public class WifiLlManager {
                 .getSystemService(Context.WIFI_SERVICE);
 
         mWifiBroadcastReceiver = new BroadcastReceiver() {
+            private long mLastScanTime = 0;
+
             @Override
             public void onReceive(Context c, Intent intent) {
                 if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
@@ -89,6 +93,25 @@ public class WifiLlManager {
 
                     }
                 }
+
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - mLastScanTime < Constants.MIN_WIFI_SCAN_INTERVAL) {
+                    new Handler().postDelayed(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    startWifiScan();
+                                }
+                            },
+                            Constants.MIN_WIFI_SCAN_INTERVAL - (currentTime - mLastScanTime)
+                    );
+                } else {
+                    startWifiScan();
+                }
+            }
+
+            private void startWifiScan() {
+                mLastScanTime = System.currentTimeMillis();
                 WifiUtils.startWifiScan(wifiManager);
             }
         };

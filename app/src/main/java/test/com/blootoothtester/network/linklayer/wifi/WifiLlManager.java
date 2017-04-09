@@ -127,7 +127,7 @@ public class WifiLlManager {
         startReceivingBtMessages();
     }
 
-    public void startReceivingBtMessages() {
+    private void startReceivingBtMessages() {
         // register for BT discovery events
         IntentFilter filter = new IntentFilter();
 
@@ -137,6 +137,8 @@ public class WifiLlManager {
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
 
         mBluetoothAdapter.getContext().registerReceiver(mBtBroadcastReceiver, filter);
+
+        mBluetoothAdapter.find();
     }
 
     public void startReceivingWifiMessages() {

@@ -76,10 +76,6 @@ public class WifiLlContext {
         sendUpdatedWifiMessage();
     }
 
-    public void stopWifiTransmission() {
-        mLastSentWifiMessage = null;
-    }
-
     public void receiveBtMessage(BtMessage btMessage) {
 
         if (mLastSentWifiMessage == null) {
@@ -94,6 +90,7 @@ public class WifiLlContext {
             if (!isAcked(btMessage.getFromAddress(), mOwnAckArray)) {
                 setAcked(btMessage.getFromAddress(), mOwnAckArray);
                 sendUpdatedWifiMessage();
+                mCallback.onBtMessageReceived(btMessage);
             }
         }
     }
@@ -101,6 +98,10 @@ public class WifiLlContext {
     private void sendUpdatedWifiMessage() {
         mLastSentWifiMessage.setAckArray(mOwnAckArray);
         mCallback.transmitWifiMessage(mLastSentWifiMessage);
+    }
+
+    public void stopWifiTransmission() {
+        mLastSentWifiMessage = null;
     }
 
     public byte getSessionId() {

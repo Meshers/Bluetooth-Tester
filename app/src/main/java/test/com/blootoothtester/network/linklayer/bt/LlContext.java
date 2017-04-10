@@ -149,11 +149,11 @@ public class LlContext {
                     sendUpdatedAckArray();
                 }
 
-                for(LlMessage message: newlyAccepted) {
+                for (LlMessage message : newlyAccepted) {
                     if (message.getToAddress() == Constants.PDU_BROADCAST_ADDR
                             || message.getToAddress() == mOwnAddr)
-                    // send message to upper layer
-                    mCallback.sendUpperLayer(message);
+                        // send message to upper layer
+                        mCallback.sendUpperLayer(message);
                 }
         }
     }

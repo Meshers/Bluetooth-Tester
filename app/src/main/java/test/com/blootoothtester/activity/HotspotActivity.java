@@ -145,4 +145,10 @@ public class HotspotActivity extends AppCompatActivity {
         intent.putExtra(EXTRA_OWN_ID, ownId);
         context.startActivity(intent);
     }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mWifiLlManager.cleanUpReceivers();
+    }
 }

@@ -2,6 +2,7 @@ package test.com.blootoothtester.network.linklayer.wifi;
 
 
 import android.util.Base64;
+import android.util.Log;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -18,7 +19,10 @@ public class WifiMessage {
     private final byte mMsgId;
     private static final int SIZE_MSG_ID = 1;
     private byte[] mAckArray;
+    private static final int ACK_ARRAY_BITS_PER_USER = 1;
     private static final int SIZE_ACK_ARRAY = Constants.MAX_USERS;
+    private static final int SIZE_ENCODED_ACK_ARRAY = ArrayUtil.getSizeIfPacked(SIZE_ACK_ARRAY,
+            ACK_ARRAY_BITS_PER_USER);
     private final byte[] mBody;
 
     public final static Charset ENCODE_CHARSET = Charset.forName("UTF-8");
@@ -41,27 +45,32 @@ public class WifiMessage {
     }
 
     public static boolean isValidWifiMessage(String encoded, byte sessionId) {
-        if (encoded == null) {
-            return false;
-        }
-        byte[] encodedPrimitive;
         try {
-            encodedPrimitive = Base64.decode(encoded, BASE64_FLAGS);
-        } catch (IllegalArgumentException e) {
-            // not base 64
-            return false;
-        }
-        if (encodedPrimitive.length < HEADER_PREFIX.length) {
-            return false;
-        }
+            if (encoded == null) {
+                return false;
+            }
+            byte[] encodedPrimitive;
+            try {
+                encodedPrimitive = Base64.decode(encoded, BASE64_FLAGS);
+            } catch (IllegalArgumentException e) {
+                // not base 64
+                return false;
+            }
+            if (encodedPrimitive.length < HEADER_PREFIX.length) {
+                return false;
+            }
 
-        byte[] encodedHeader = Arrays.copyOfRange(encodedPrimitive, 0, HEADER_PREFIX.length);
-        if (!Arrays.equals(encodedHeader, HEADER_PREFIX)) {
+            byte[] encodedHeader = Arrays.copyOfRange(encodedPrimitive, 0, HEADER_PREFIX.length);
+            if (!Arrays.equals(encodedHeader, HEADER_PREFIX)) {
+                return false;
+            }
+
+            WifiMessage wifiMessage = decode(encoded);
+            return wifiMessage.mSessionId == sessionId;
+        } catch (Exception e) {
+            Log.e("isValidWifiMessage", "Failed while testing for valid wifi message", e);
             return false;
         }
-
-        WifiMessage wifiMessage = decode(encoded);
-        return wifiMessage.mSessionId == sessionId;
     }
 
     public String encode() {
@@ -72,7 +81,8 @@ public class WifiMessage {
         encoded.add(mSessionId);
         encoded.add(mFromAddress);
         encoded.add(mMsgId);
-        encoded.addAll(Arrays.asList(ArrayUtil.toByteArray(mAckArray)));
+        byte[] packedAckArray = ArrayUtil.pack(mAckArray, 1);
+        encoded.addAll(Arrays.asList(ArrayUtil.toByteArray(packedAckArray)));
         encoded.addAll(Arrays.asList(ArrayUtil.toByteArray(mBody)));
 
         byte[] encodedPrimitive = ArrayUtil.toPrimitiveByteArray(
@@ -94,11 +104,13 @@ public class WifiMessage {
         byte msgId = encodedPrimitive[nextFieldIndex];
         nextFieldIndex += SIZE_MSG_ID;
 
-        byte[] ackArray = new byte[SIZE_ACK_ARRAY];
-        for (int i = 0; i < SIZE_ACK_ARRAY; i++) {
-            ackArray[i] = encodedPrimitive[i + nextFieldIndex];
-        }
-        nextFieldIndex += SIZE_ACK_ARRAY;
+        byte[] packedAckArray = Arrays.copyOfRange(
+                encodedPrimitive,
+                nextFieldIndex,
+                nextFieldIndex + SIZE_ENCODED_ACK_ARRAY);
+        byte[] ackArray = ArrayUtil.unpack(packedAckArray, 1, SIZE_ACK_ARRAY);
+
+        nextFieldIndex +=  SIZE_ENCODED_ACK_ARRAY;
 
         byte[] body = new byte[encodedPrimitive.length - nextFieldIndex];
         System.arraycopy(encodedPrimitive, nextFieldIndex, body, 0, body.length);

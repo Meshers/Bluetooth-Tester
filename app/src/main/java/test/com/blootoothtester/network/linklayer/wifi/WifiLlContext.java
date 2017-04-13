@@ -1,8 +1,6 @@
 package test.com.blootoothtester.network.linklayer.wifi;
 
 import android.os.Handler;
-import android.os.Message;
-import android.os.SystemClock;
 
 import java.util.HashSet;
 

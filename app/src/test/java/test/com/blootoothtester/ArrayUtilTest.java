@@ -3,8 +3,6 @@ package test.com.blootoothtester;
 
 import org.junit.Test;
 
-import java.lang.reflect.Array;
-
 import test.com.blootoothtester.util.ArrayUtil;
 
 import static org.junit.Assert.*;
